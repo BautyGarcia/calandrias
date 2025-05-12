@@ -7,16 +7,13 @@ import {
   SheetTitle as SheetTitleComp,
 } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import Image from "next/image";
 
 export function Header() {
   return (
     <header className="bg-[var(--light-sand)] border-b border-[var(--beige-arena)] shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          {/* Logo placeholder */}
-          <div className="w-12 h-12 bg-black rounded-sm flex-shrink-0"></div>
-          <h1 className="text-xl font-serif text-[var(--brown-earth)] hidden sm:block">Calandrias Cabañas</h1>
-        </div>
+        <Image src="/logo.png" alt="Calandrias Cabañas" width={50} height={50} />
 
         {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-1 sm:gap-2">

@@ -31,10 +31,31 @@ export default function Home() {
     <main className="flex min-h-screen flex-col">
       {/* Hero Section */}
       <section className="bg-[var(--light-sand)] min-h-screen flex items-center relative overflow-hidden">
-        {/* Background Animation Elements */}
-        <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-[var(--brown-earth)]/5 float" style={{ animationDelay: '0.5s' }}></div>
-        <div className="absolute left-1/4 bottom-1/4 w-40 h-40 rounded-full bg-[var(--terracotta)]/5 float" style={{ animationDelay: '1.5s' }}></div>
-        <div className="absolute right-1/3 top-1/3 w-52 h-52 rounded-full bg-[var(--green-moss)]/5 float" style={{ animationDelay: '1s' }}></div>
+        {/* Background Logo Elements */}
+        <Image
+          src="/logo.svg"
+          alt="Logo decorativo"
+          width={320}
+          height={320}
+          className="absolute -right-24 -top-24 opacity-10 select-none pointer-events-none float"
+          style={{ animationDelay: '0.5s' }}
+        />
+        <Image
+          src="/logo.svg"
+          alt="Logo decorativo"
+          width={180}
+          height={180}
+          className="absolute left-1/4 bottom-1/4 opacity-10 select-none pointer-events-none float"
+          style={{ animationDelay: '1.5s' }}
+        />
+        <Image
+          src="/logo.svg"
+          alt="Logo decorativo"
+          width={220}
+          height={220}
+          className="absolute right-1/3 top-1/3 opacity-10 select-none pointer-events-none float"
+          style={{ animationDelay: '1s' }}
+        />
         
         <div className="container mx-auto px-4 py-16 md:py-0 z-0">
           <div className="flex flex-col md:flex-row items-center gap-12">

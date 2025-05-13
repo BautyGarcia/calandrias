@@ -32,7 +32,7 @@ export function BentoGridGallery() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[300px]">
         {items.slice(0, visibleCount).map((item, idx) => (
           <div
-            key={item.id}
+            key={idx}
             className={cn(
               "group relative overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900",
               item.span

@@ -1,5 +1,4 @@
 "use client"
-
 import * as React from "react"
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
 import { ChevronDownIcon } from "lucide-react"
@@ -11,7 +10,7 @@ function getStaggeredDelay(index: number) {
   return `${index * 80}ms`;
 }
 
-function useInView(ref: React.RefObject<HTMLElement>, rootMargin = "0px") {
+function useInView(ref: React.RefObject<HTMLDivElement>, rootMargin = "0px") {
   const [inView, setInView] = React.useState(false);
   React.useEffect(() => {
     if (!ref.current) return;
@@ -35,10 +34,11 @@ function Accordion({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root> & { children: React.ReactNode }) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, "-100px");
+  const inView = useInView(ref as React.RefObject<HTMLDivElement>, "-100px");
   // Add index to each child for staggered animation
   const childrenWithDelay = React.Children.map(children, (child, idx) => {
     if (React.isValidElement(child)) {
+      // @ts-expect-error: Passing custom prop 'data-idx' to child for staggered animation
       return React.cloneElement(child, { 'data-idx': idx, inView });
     }
     return child;
@@ -50,13 +50,13 @@ function Accordion({
   );
 }
 
+type AccordionItemProps = React.ComponentProps<typeof AccordionPrimitive.Item> & { 'data-idx'?: number, inView?: boolean };
 function AccordionItem({
   className,
   inView,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Item> & { 'data-idx'?: number, inView?: boolean }) {
-  // Get the index for staggered animation
-  const idx = (props as any)['data-idx'] ?? 0;
+}: AccordionItemProps) {
+  const idx = props['data-idx'] ?? 0;
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"

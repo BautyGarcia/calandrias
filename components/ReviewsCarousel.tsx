@@ -8,9 +8,6 @@ export function ReviewsCarousel() {
   const [isHovering, setIsHovering] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
   const [cardWidth, setCardWidth] = useState(0)
-  const [visibleCards, setVisibleCards] = useState(3)
-  const [animationDuration, setAnimationDuration] = useState(22)
-  const [containerWidth, setContainerWidth] = useState(0)
 
   // Duplicate for seamless loop
   const duplicatedItems = [...reviews, ...reviews]
@@ -19,7 +16,6 @@ export function ReviewsCarousel() {
     const updateDimensions = () => {
       if (carouselRef.current) {
         const newContainerWidth = carouselRef.current.offsetWidth
-        setContainerWidth(newContainerWidth)
 
         let newVisibleCards = 3
         if (newContainerWidth < 768) {
@@ -27,8 +23,9 @@ export function ReviewsCarousel() {
         } else if (newContainerWidth < 1024) {
           newVisibleCards = 2
         }
-        setVisibleCards(newVisibleCards)
-        setCardWidth(newContainerWidth / (newVisibleCards + 0.5))
+        // Calculate card width including gap
+        const newCardWidth = newContainerWidth / (newVisibleCards + 0.5)
+        setCardWidth(newCardWidth)
       }
     }
     updateDimensions()
@@ -42,7 +39,7 @@ export function ReviewsCarousel() {
   const totalWidth = cardWidth * reviews.length
   const animationStyle = {
     width: `${cardWidth * duplicatedItems.length}px`,
-    animation: `scroll ${animationDuration}s linear infinite`,
+    animation: `scroll 22s linear infinite`,
     animationPlayState: isHovering ? "paused" : "running",
   }
 
@@ -78,7 +75,7 @@ export function ReviewsCarousel() {
                       {item.name.split(' ').map(n => n[0]).join('').slice(0,2)}
                     </div>
                   </div>
-                  <p className="text-[var(--slate-gray)] mb-4 italic">"{item.review}"</p>
+                  <p className="text-[var(--slate-gray)] mb-4 italic">&quot;{item.review}&quot;</p>
                   <div>
                     <p className="font-medium text-[var(--dark-wood)]">{item.name}</p>
                     <p className="text-xs text-[var(--slate-gray)]">{item.city}</p>

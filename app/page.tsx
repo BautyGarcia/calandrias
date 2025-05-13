@@ -1,21 +1,8 @@
 import { 
   Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent,
-  CardFooter
+  CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader as SheetHeaderComp,
-  SheetTitle as SheetTitleComp,
-} from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
 import Image from "next/image";
 import {
   Accordion,
@@ -243,7 +230,7 @@ export default function Home() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>¿Cómo realizo una reserva?</AccordionTrigger>
                 <AccordionContent>
-                  Puedes reservar directamente desde nuestra web utilizando el botón "Reservar ahora", 
+                  Puedes reservar directamente desde nuestra web utilizando el botón &quot;Reservar ahora&quot;, 
                   llamando al número de contacto o enviando un correo electrónico. 
                   Se requiere un depósito del 30% para confirmar la reserva.
                 </AccordionContent>

@@ -1,7 +1,3 @@
-import { 
-  Card, 
-  CardContent
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
@@ -63,10 +59,13 @@ export default function Home() {
               </div>
             </div>
             <div className="flex-1 relative w-full h-[400px] md:h-[600px] rounded-md overflow-hidden scale-in" style={{ animationDelay: '0.3s' }}>
-              {/* Placeholder for hero image */}
-              <div className="absolute inset-0 bg-[var(--slate-gray)]/20 flex items-center justify-center">
-                <p className="text-white font-bold text-xl">Imagen de cabaña principal</p>
-              </div>
+              <Image
+                src="/gallery/vista-aerea-del-complejo.jpg"
+                alt="Vista aérea del complejo de cabañas Calandrias"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
         </div>

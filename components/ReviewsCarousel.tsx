@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { reviews } from "@/data"
+import { reviews } from "@/data/reviews"
 
 export function ReviewsCarousel() {
   const [isHovering, setIsHovering] = useState(false)

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { bentoGalleryItems } from "@/data"
+import { bentoGalleryItems } from "@/data/bentoGalleryItems"
 
 export function BentoGridGallery() {
   const [visibleCount, setVisibleCount] = useState(8)

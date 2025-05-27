@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { ReviewsCarousel } from "@/components/ReviewsCarousel";
 import { BentoGridGallery } from "@/components/BentoGridGallery";
+import { CabinsShowcase } from "@/components/CabinsShowcase";
 
 export default function Home() {
   return (
@@ -123,56 +124,7 @@ export default function Home() {
             Elige la que mejor se adapte a tus necesidades.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Cabin Card 1 */}
-            <Card className="overflow-hidden bg-white/95 border-[var(--beige-arena)]">
-              <div className="relative w-full h-48 bg-[var(--slate-gray)]/20 flex items-center justify-center">
-                <p className="text-white font-bold">Imagen Cabaña El Pinar</p>
-              </div>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Cabaña El Pinar</h3>
-                <p className="text-[var(--slate-gray)] mb-4">Ideal para parejas. 1 dormitorio, chimenea y vista al bosque.</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-[var(--brown-earth)]">$12,000/noche</span>
-                  <Button variant="moss" size="sm">Ver detalles</Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Cabin Card 2 */}
-            <Card className="overflow-hidden bg-white/95 border-[var(--beige-arena)]">
-              <div className="relative w-full h-48 bg-[var(--slate-gray)]/20 flex items-center justify-center">
-                <p className="text-white font-bold">Imagen Cabaña El Roble</p>
-              </div>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Cabaña El Roble</h3>
-                <p className="text-[var(--slate-gray)] mb-4">Perfecta para familias. 2 dormitorios, cocina completa y terraza.</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-[var(--brown-earth)]">$18,000/noche</span>
-                  <Button variant="moss" size="sm">Ver detalles</Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Cabin Card 3 */}
-            <Card className="overflow-hidden bg-white/95 border-[var(--beige-arena)]">
-              <div className="relative w-full h-48 bg-[var(--slate-gray)]/20 flex items-center justify-center">
-                <p className="text-white font-bold">Imagen Cabaña El Valle</p>
-              </div>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Cabaña El Valle</h3>
-                <p className="text-[var(--slate-gray)] mb-4">Espaciosa y lujosa. 3 dormitorios, jacuzzi y vista panorámica.</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-[var(--brown-earth)]">$25,000/noche</span>
-                  <Button variant="moss" size="sm">Ver detalles</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="flex justify-center mt-10">
-            <Button variant="wood" size="lg">Ver todas las cabañas</Button>
-          </div>
+          <CabinsShowcase />
         </div>
       </section>
 

@@ -9,6 +9,7 @@ import {
 import { ReviewsCarousel } from "@/components/ReviewsCarousel";
 import { BentoGridGallery } from "@/components/BentoGridGallery";
 import { CabinsShowcase } from "@/components/CabinsShowcase";
+import { LocationMap } from "@/components/LocationMap";
 
 export default function Home() {
   return (
@@ -166,8 +167,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ Section - Updated with Accordion */}
+      {/* Location Section */}
       <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <LocationMap mapUrl="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3893.848989505165!2d-59.1513972!3d-37.360580399999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95911ff66cee8eeb%3A0x8d3b2f19b3a694e6!2sLas%20Calandrias%20de%20Tandil!5e1!3m2!1ses-419!2sar!4v1748306592334!5m2!1ses-419!2sar" />
+        </div>
+      </section>
+
+      {/* FAQ Section - Updated with Accordion */}
+      <section className="py-16 bg-[var(--light-sand)]">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-serif text-center text-[var(--brown-earth)] mb-4">
             Preguntas frecuentes

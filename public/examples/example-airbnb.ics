@@ -1,0 +1,91 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Airbnb Inc//Airbnb//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VTIMEZONE
+TZID:America/Argentina/Buenos_Aires
+BEGIN:STANDARD
+DTSTART:20070311T030000
+TZOFFSETFROM:-0200
+TZOFFSETTO:-0300
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:20071007T020000
+TZOFFSETFROM:-0300
+TZOFFSETTO:-0200
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTART;TZID=America/Argentina/Buenos_Aires:20250215T150000
+DTEND;TZID=America/Argentina/Buenos_Aires:20250218T110000
+DTSTAMP:20250109T000000Z
+UID:airbnb-123456789@airbnb.com
+CREATED:20250105T120000Z
+DESCRIPTION:Reserved - Las Calandrias\n\nReservation Code: HM123456789\nGuest: María González\nAdults: 2\nChildren: 0\nPets: 0\n\nCabaña Refugio Íntimo - Experiencia para 2 personas en las montañas de Tandil
+LAST-MODIFIED:20250105T120000Z
+LOCATION:Las Calandrias\, Tandil\, Buenos Aires\, Argentina
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Las Calandrias (HM123456789)
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Argentina/Buenos_Aires:20250305T150000
+DTEND;TZID=America/Argentina/Buenos_Aires:20250310T110000
+DTSTAMP:20250109T000000Z
+UID:airbnb-987654321@airbnb.com
+CREATED:20250108T140000Z
+DESCRIPTION:Reserved - Las Calandrias\n\nReservation Code: HM987654321\nGuest: Carlos Rodríguez\nAdults: 4\nChildren: 2\nPets: 1\n\nCabaña Confort Familiar - Perfecta para familias con niños y mascotas
+LAST-MODIFIED:20250108T140000Z
+LOCATION:Las Calandrias\, Tandil\, Buenos Aires\, Argentina
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Las Calandrias (HM987654321)
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Argentina/Buenos_Aires:20250420T150000
+DTEND;TZID=America/Argentina/Buenos_Aires:20250427T110000
+DTSTAMP:20250109T000000Z
+UID:airbnb-456789123@airbnb.com
+CREATED:20250107T090000Z
+DESCRIPTION:Reserved - Las Calandrias\n\nReservation Code: HM456789123\nGuest: Ana Martinez\nAdults: 6\nChildren: 0\nPets: 0\n\nCabaña Experiencia Premium - Grupo de amigos\, escapada de fin de semana largo
+LAST-MODIFIED:20250107T090000Z
+LOCATION:Las Calandrias\, Tandil\, Buenos Aires\, Argentina
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Las Calandrias (HM456789123)
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Argentina/Buenos_Aires:20250615T150000
+DTEND;TZID=America/Argentina/Buenos_Aires:20250622T110000
+DTSTAMP:20250109T000000Z
+UID:airbnb-789123456@airbnb.com
+CREATED:20250103T160000Z
+DESCRIPTION:Reserved - Las Calandrias\n\nReservation Code: HM789123456\nGuest: Roberto Silva\nAdults: 8\nChildren: 0\nPets: 0\n\nCabaña Retiro Exclusivo - Celebración familiar\, reunión anual
+LAST-MODIFIED:20250103T160000Z
+LOCATION:Las Calandrias\, Tandil\, Buenos Aires\, Argentina
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Las Calandrias (HM789123456)
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Argentina/Buenos_Aires:20250801T150000
+DTEND;TZID=America/Argentina/Buenos_Aires:20250805T110000
+DTSTAMP:20250109T000000Z
+UID:airbnb-321654987@airbnb.com
+CREATED:20250106T180000Z
+DESCRIPTION:Blocked - Las Calandrias\n\nMantenimiento programado\nLimpieza profunda y renovación de instalaciones
+LAST-MODIFIED:20250106T180000Z
+LOCATION:Las Calandrias\, Tandil\, Buenos Aires\, Argentina
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Las Calandrias - Bloqueado
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR 

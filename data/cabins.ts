@@ -1,19 +1,5 @@
-import {
-    Mountain,
-    Tv,
-    Snowflake,
-    Flame,
-    Shield,
-    Wifi,
-    ChefHat,
-    Car,
-    Waves,
-    TreePine,
-    Utensils
-} from "lucide-react"
-
 export interface CabinFeature {
-    icon: any;
+    icon: string; // String identifier for icon
     label: string;
 }
 
@@ -45,10 +31,10 @@ export const cabinsData: Cabin[] = [
         bathrooms: "1 baño",
         image: "/cabin1.jpg",
         features: [
-            { icon: Mountain, label: "Vista panorámica" },
-            { icon: Flame, label: "Chimenea interior" },
-            { icon: Wifi, label: "WiFi gratuito" },
-            { icon: Car, label: "Estacionamiento" }
+            { icon: "Mountain", label: "Vista panorámica" },
+            { icon: "Flame", label: "Chimenea interior" },
+            { icon: "Wifi", label: "WiFi gratuito" },
+            { icon: "Car", label: "Estacionamiento" }
         ],
         highlights: ["Vista a las montañas", "Chimenea romántica", "Terraza privada", "Cocina equipada"]
     },
@@ -64,10 +50,10 @@ export const cabinsData: Cabin[] = [
         bathrooms: "2 baños",
         image: "/cabin2.jpg",
         features: [
-            { icon: Tv, label: "Entretenimiento" },
-            { icon: Snowflake, label: "Aire acondicionado" },
-            { icon: ChefHat, label: "Cocina completa" },
-            { icon: Flame, label: "Parrilla exterior" }
+            { icon: "Tv", label: "Entretenimiento" },
+            { icon: "Snowflake", label: "Aire acondicionado" },
+            { icon: "ChefHat", label: "Cocina completa" },
+            { icon: "Flame", label: "Parrilla exterior" }
         ],
         highlights: ["Zona de juegos", "Cocina amplia", "Terraza con parrilla", "Área de descanso"]
     },
@@ -83,10 +69,10 @@ export const cabinsData: Cabin[] = [
         bathrooms: "2 baños",
         image: "/cabin3.jpg",
         features: [
-            { icon: Waves, label: "Pileta privada" },
-            { icon: TreePine, label: "Zona de fogatas" },
-            { icon: Shield, label: "Seguridad 24/7" },
-            { icon: Utensils, label: "Comedor exterior" }
+            { icon: "Waves", label: "Pileta privada" },
+            { icon: "TreePine", label: "Zona de fogatas" },
+            { icon: "Shield", label: "Seguridad 24/7" },
+            { icon: "Utensils", label: "Comedor exterior" }
         ],
         highlights: ["Pileta climatizada", "Jacuzzi", "Vista panorámica", "Zona de barbacoa"]
     },
@@ -102,10 +88,10 @@ export const cabinsData: Cabin[] = [
         bathrooms: "3 baños",
         image: "/cabin4.jpg",
         features: [
-            { icon: Mountain, label: "Vista 360°" },
-            { icon: Waves, label: "Pileta infinity" },
-            { icon: Flame, label: "Múltiples chimeneas" },
-            { icon: Car, label: "Garaje privado" }
+            { icon: "Mountain", label: "Vista 360°" },
+            { icon: "Waves", label: "Pileta infinity" },
+            { icon: "Flame", label: "Múltiples chimeneas" },
+            { icon: "Car", label: "Garaje privado" }
         ],
         highlights: ["Pileta infinity", "Spa privado", "Sala de estar amplia", "Cocina gourmet"]
     }

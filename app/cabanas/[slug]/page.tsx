@@ -2,7 +2,8 @@ import { notFound } from "next/navigation"
 import { getCabinBySlug, getAllCabinSlugs } from "@/data/cabins"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import Image from "next/image"
+import CabinCalendarSection from "@/components/CabinCalendarSection"
+import { Icon } from "@/utils/icons"
 import {
     Users,
     Bed,
@@ -112,7 +113,7 @@ export default async function CabinPage({ params }: PageProps) {
                                         key={idx}
                                         className="flex items-center gap-3 p-4 rounded-lg bg-[var(--soft-cream)] hover:bg-[var(--light-sand)] transition-colors"
                                     >
-                                        <feature.icon className="h-5 w-5 text-[var(--brown-earth)]" />
+                                        <Icon name={feature.icon} className="h-5 w-5 text-[var(--brown-earth)]" />
                                         <span className="font-medium text-[var(--dark-wood)]">{feature.label}</span>
                                     </div>
                                 ))}
@@ -200,6 +201,11 @@ export default async function CabinPage({ params }: PageProps) {
                     </div>
                 </div>
             </section>
+
+            {/* Calendar Section */}
+            <CabinCalendarSection
+                cabin={cabin}
+            />
 
             {/* CTA Section */}
             <section className="py-16 bg-[var(--brown-earth)]">

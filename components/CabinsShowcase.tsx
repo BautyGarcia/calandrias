@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Icon } from "@/utils/icons"
 import {
     Mountain,
     Tv,
@@ -23,7 +24,7 @@ import {
 import { cabinsData } from "@/data/cabins"
 
 export function CabinsShowcase() {
-    
+
     return (
         <div className="space-y-12">
             {/* Grid principal de cabañas */}
@@ -76,7 +77,7 @@ export function CabinsShowcase() {
                                         key={idx}
                                         className="flex items-center gap-2 p-2 rounded-lg bg-[var(--soft-cream)] transition-colors hover:bg-[var(--light-sand)]"
                                     >
-                                        <feature.icon className="h-4 w-4 text-[var(--brown-earth)]" />
+                                        <Icon name={feature.icon} className="h-4 w-4 text-[var(--brown-earth)]" />
                                         <span className="text-sm text-[var(--dark-wood)]">{feature.label}</span>
                                     </div>
                                 ))}

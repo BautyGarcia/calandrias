@@ -8,20 +8,33 @@ import {
 } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export function Header() {
   return (
     <header className="bg-[var(--light-sand)] border-b border-[var(--beige-arena)] shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Image src="/logo.png" alt="Calandrias Cabañas" width={50} height={50} />
+        <Link href="/">
+          <Image src="/logo.png" alt="Calandrias Cabañas" width={50} height={50} className="cursor-pointer" />
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-1 sm:gap-2">
-          <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Inicio</Button>
-          <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Cabañas</Button>
-          <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Servicios</Button>
-          <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Contacto</Button>
-          <Button variant="wood" size="sm" className="ml-2">Reservar</Button>
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Inicio</Button>
+          </Link>
+          <Link href="/cabanas">
+            <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Cabañas</Button>
+          </Link>
+          <Link href="/#servicios">
+            <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Servicios</Button>
+          </Link>
+          <Link href="/#contacto">
+            <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Contacto</Button>
+          </Link>
+          <Link href="/#reservar">
+            <Button variant="wood" size="sm" className="ml-2">Reservar</Button>
+          </Link>
         </nav>
 
         {/* Mobile nav: Sheet */}
@@ -39,11 +52,21 @@ export function Header() {
                 </SheetTitleComp>
               </SheetHeaderComp>
               <nav className="flex flex-col gap-1 p-4">
-                <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Inicio</Button>
-                <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Cabañas</Button>
-                <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Servicios</Button>
-                <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Contacto</Button>
-                <Button variant="wood" size="sm" className="justify-start w-full mt-2">Reservar</Button>
+                <Link href="/">
+                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Inicio</Button>
+                </Link>
+                <Link href="/cabanas">
+                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Cabañas</Button>
+                </Link>
+                <Link href="/#servicios">
+                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Servicios</Button>
+                </Link>
+                <Link href="/#contacto">
+                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Contacto</Button>
+                </Link>
+                <Link href="/#reservar">
+                  <Button variant="wood" size="sm" className="justify-start w-full mt-2">Reservar</Button>
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>

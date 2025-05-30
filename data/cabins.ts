@@ -19,6 +19,7 @@ export interface CabinFeature {
 
 export interface Cabin {
     id: number;
+    slug: string;
     name: string;
     subtitle: string;
     description: string;
@@ -34,6 +35,7 @@ export interface Cabin {
 export const cabinsData: Cabin[] = [
     {
         id: 1,
+        slug: "refugio-intimo",
         name: "Cabaña 1",
         subtitle: "Refugio Íntimo",
         description: "Perfecta para parejas que buscan una escapada romántica en medio de la naturaleza.",
@@ -52,6 +54,7 @@ export const cabinsData: Cabin[] = [
     },
     {
         id: 2,
+        slug: "confort-familiar",
         name: "Cabaña 2",
         subtitle: "Confort Familiar",
         description: "Ideal para familias pequeñas que desean comodidad y aventura en un solo lugar.",
@@ -70,6 +73,7 @@ export const cabinsData: Cabin[] = [
     },
     {
         id: 3,
+        slug: "experiencia-premium",
         name: "Cabaña 3",
         subtitle: "Experiencia Premium",
         description: "Lujo y naturaleza se combinan para ofrecer una experiencia inolvidable.",
@@ -88,6 +92,7 @@ export const cabinsData: Cabin[] = [
     },
     {
         id: 4,
+        slug: "retiro-exclusivo",
         name: "Cabaña 4",
         subtitle: "Retiro Exclusivo",
         description: "La experiencia más completa para grupos que buscan privacidad y lujo absoluto.",
@@ -104,4 +109,14 @@ export const cabinsData: Cabin[] = [
         ],
         highlights: ["Pileta infinity", "Spa privado", "Sala de estar amplia", "Cocina gourmet"]
     }
-] 
+]
+
+// Función helper para obtener una cabaña por slug
+export function getCabinBySlug(slug: string): Cabin | undefined {
+    return cabinsData.find(cabin => cabin.slug === slug)
+}
+
+// Función helper para obtener todos los slugs
+export function getAllCabinSlugs(): string[] {
+    return cabinsData.map(cabin => cabin.slug)
+} 

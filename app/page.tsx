@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { ReviewsCarousel } from "@/components/ReviewsCarousel";
 import { BentoGridGallery } from "@/components/BentoGridGallery";
-import { CabinsShowcase } from "@/components/CabinsShowcase";
+import { CabinsTeaser } from "@/components/CabinsTeaser";
 import { LocationMap } from "@/components/LocationMap";
 
 export default function Home() {
@@ -41,7 +41,7 @@ export default function Home() {
           className="absolute right-1/3 top-1/3 opacity-10 select-none pointer-events-none float"
           style={{ animationDelay: '1s' }}
         />
-        
+
         <div className="container mx-auto px-4 py-16 md:py-0 z-0">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-8">
@@ -49,7 +49,7 @@ export default function Home() {
                 Tu escape perfecto en las montañas
               </h1>
               <p className="text-xl md:text-2xl text-[var(--slate-gray)] slide-up-delay-1">
-                Descubre nuestras cabañas de lujo rodeadas de naturaleza. 
+                Descubre nuestras cabañas de lujo rodeadas de naturaleza.
                 Un lugar para desconectar, relajarse y crear recuerdos inolvidables.
               </p>
               <div className="flex flex-col sm:flex-row gap-6 pt-6 slide-up-delay-2">
@@ -73,12 +73,12 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section id="servicios" className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-serif text-center text-[var(--brown-earth)] mb-12">
             Diseñadas para una experiencia única
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center text-center p-4">
               <div className="w-16 h-16 rounded-full bg-[var(--soft-cream)] flex items-center justify-center mb-4">
@@ -89,7 +89,7 @@ export default function Home() {
               <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Ubicación privilegiada</h3>
               <p className="text-[var(--slate-gray)]">Nuestras cabañas están ubicadas en el corazón de la montaña, a solo minutos de los principales atractivos naturales.</p>
             </div>
-            
+
             <div className="flex flex-col items-center text-center p-4">
               <div className="w-16 h-16 rounded-full bg-[var(--soft-cream)] flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 text-[var(--brown-earth)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +99,7 @@ export default function Home() {
               <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Confort total</h3>
               <p className="text-[var(--slate-gray)]">Combinamos la estética rústica con todas las comodidades modernas para una estancia perfecta.</p>
             </div>
-            
+
             <div className="flex flex-col items-center text-center p-4">
               <div className="w-16 h-16 rounded-full bg-[var(--soft-cream)] flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 text-[var(--brown-earth)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -113,23 +113,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Cabins Showcase */}
+      {/* Cabins Teaser */}
       <section className="py-16 bg-[var(--light-sand)]">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif text-center text-[var(--brown-earth)] mb-4">
-            Nuestras cabañas
-          </h2>
-          <p className="text-center text-[var(--slate-gray)] mb-12 max-w-2xl mx-auto">
-            Cada cabaña está diseñada cuidadosamente para brindarte una experiencia única.
-            Elige la que mejor se adapte a tus necesidades.
-          </p>
-          
-          <CabinsShowcase />
+          <CabinsTeaser />
         </div>
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 bg-[var(--brown-earth)]">
+      <section id="reservar" className="py-16 bg-[var(--brown-earth)]">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-serif text-white mb-6">
             ¿Listo para tu próxima aventura?
@@ -189,55 +181,55 @@ export default function Home() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>¿Cómo realizo una reserva?</AccordionTrigger>
                 <AccordionContent>
-                  Puedes reservar directamente desde nuestra web utilizando el botón &quot;Reservar ahora&quot;, 
-                  llamando al número de contacto o enviando un correo electrónico. 
+                  Puedes reservar directamente desde nuestra web utilizando el botón &quot;Reservar ahora&quot;,
+                  llamando al número de contacto o enviando un correo electrónico.
                   Se requiere un depósito del 30% para confirmar la reserva.
                 </AccordionContent>
               </AccordionItem>
-              
+
               <AccordionItem value="item-2">
                 <AccordionTrigger>¿Qué incluye la tarifa?</AccordionTrigger>
                 <AccordionContent>
-                  La tarifa incluye alojamiento, ropa de cama, toallas, amenities básicos, acceso a todas las 
-                  instalaciones de la cabaña (jacuzzi, chimenea, parrilla), estacionamiento y Wi-Fi. 
+                  La tarifa incluye alojamiento, ropa de cama, toallas, amenities básicos, acceso a todas las
+                  instalaciones de la cabaña (jacuzzi, chimenea, parrilla), estacionamiento y Wi-Fi.
                   También ofrecemos un kit de bienvenida con productos locales.
                 </AccordionContent>
               </AccordionItem>
-              
+
               <AccordionItem value="item-3">
                 <AccordionTrigger>¿Permiten mascotas?</AccordionTrigger>
                 <AccordionContent>
-                  ¡Sí! Entendemos que las mascotas son parte de la familia. Aceptamos mascotas pequeñas y 
-                  medianas con un cargo adicional de limpieza. Te pedimos que nos informes al momento de hacer 
+                  ¡Sí! Entendemos que las mascotas son parte de la familia. Aceptamos mascotas pequeñas y
+                  medianas con un cargo adicional de limpieza. Te pedimos que nos informes al momento de hacer
                   la reserva. Algunas cabañas tienen áreas especiales para mascotas.
                 </AccordionContent>
               </AccordionItem>
-              
+
               <AccordionItem value="item-4">
                 <AccordionTrigger>¿Cuál es la política de cancelación?</AccordionTrigger>
                 <AccordionContent>
-                  Puedes cancelar hasta 7 días antes de tu llegada con reembolso completo. Cancelaciones 
-                  entre 3-7 días antes de la llegada reciben un reembolso del 50%. Cancelaciones con menos 
-                  de 3 días de anticipación no son reembolsables, pero ofrecemos la posibilidad de reprogramar 
+                  Puedes cancelar hasta 7 días antes de tu llegada con reembolso completo. Cancelaciones
+                  entre 3-7 días antes de la llegada reciben un reembolso del 50%. Cancelaciones con menos
+                  de 3 días de anticipación no son reembolsables, pero ofrecemos la posibilidad de reprogramar
                   la estadía dentro de los siguientes 6 meses, sujeto a disponibilidad.
                 </AccordionContent>
               </AccordionItem>
-              
+
               <AccordionItem value="item-5">
                 <AccordionTrigger>¿Hay actividades cerca de las cabañas?</AccordionTrigger>
                 <AccordionContent>
-                  ¡Absolutamente! La zona ofrece numerosas actividades como senderismo, cabalgatas, pesca, 
-                  ciclismo de montaña, y paseos en kayak. Estamos a 15 minutos de las mejores rutas de 
-                  trekking y a 10 minutos del pueblo donde encontrarás restaurantes y tiendas locales. 
+                  ¡Absolutamente! La zona ofrece numerosas actividades como senderismo, cabalgatas, pesca,
+                  ciclismo de montaña, y paseos en kayak. Estamos a 15 minutos de las mejores rutas de
+                  trekking y a 10 minutos del pueblo donde encontrarás restaurantes y tiendas locales.
                   En recepción podemos ayudarte a organizar excursiones y actividades.
                 </AccordionContent>
               </AccordionItem>
-              
+
               <AccordionItem value="item-6">
                 <AccordionTrigger>¿A qué hora es el check-in y check-out?</AccordionTrigger>
                 <AccordionContent>
-                  El horario de check-in es a partir de las 15:00 hrs y el check-out hasta las 11:00 hrs. 
-                  Si necesitas horarios especiales, contáctanos con anticipación y haremos lo posible por 
+                  El horario de check-in es a partir de las 15:00 hrs y el check-out hasta las 11:00 hrs.
+                  Si necesitas horarios especiales, contáctanos con anticipación y haremos lo posible por
                   acomodar tu solicitud según disponibilidad.
                 </AccordionContent>
               </AccordionItem>
@@ -247,7 +239,7 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-[var(--dark-wood)] text-white">
+      <section id="contacto" className="py-20 bg-[var(--dark-wood)] text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-serif mb-6">
             Tu escapada perfecta te espera
@@ -266,6 +258,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      </main>
+    </main>
   );
 }

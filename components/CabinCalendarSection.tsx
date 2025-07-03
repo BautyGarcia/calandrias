@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Calendar, RefreshCw, Loader2 } from "lucide-react"
+import { AlertCircle, Calendar, Loader2 } from "lucide-react"
 import CabinAvailabilityCalendar from '@/components/calendar/CabinAvailabilityCalendar'
 import { useCalendarData } from '@/hooks/useCalendarData'
 import { CALENDAR_CABINS } from '@/data/cabins-calendar'
@@ -26,7 +25,7 @@ interface CabinCalendarSectionProps {
 }
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
-  const { events, loading, error, loadFromUrl, clearData } = useCalendarData()
+  const { events, loading, error, loadFromUrl } = useCalendarData()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
 
   // Get the appropriate iCal URL for this cabin
@@ -34,13 +33,9 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
   // Auto-load calendar data when component mounts
   useEffect(() => {
-    if (!isAutoLoaded && !loading && events.length === 0) {
-      console.log(`Auto-loading calendar data for cabin: ${cabin.slug}`)
-      console.log(`Using iCal URL: ${icalUrl}`)
-      
+    if (!isAutoLoaded && !loading && events.length === 0) {    
       loadFromUrl(icalUrl)
         .then(() => {
-          console.log('Calendar data loaded successfully')
           setIsAutoLoaded(true)
         })
         .catch((err) => {
@@ -56,16 +51,6 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
     c.name.toLowerCase().includes(cabin.name.toLowerCase())
   ) || CALENDAR_CABINS[0]
 
-  const handleRefresh = async () => {
-    console.log(`Refreshing calendar data for cabin: ${cabin.slug}`)
-    try {
-      await loadFromUrl(icalUrl)
-      console.log('Calendar data refreshed successfully')
-    } catch (err) {
-      console.error('Failed to refresh calendar data:', err)
-    }
-  }
-
   return (
     <section className="py-16 bg-[var(--soft-cream)]">
       <div className="container mx-auto px-4">
@@ -75,49 +60,17 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
               Disponibilidad de {cabin.name}
             </h2>
             <p className="text-[var(--slate-gray)] max-w-2xl mx-auto">
-              Selecciona las fechas para tu estadía en {cabin.subtitle.toLowerCase()}. 
-              Los datos se sincronizan automáticamente con nuestro sistema de reservas.
+              Selecciona las fechas para tu estadía en {cabin.subtitle.toLowerCase()}.
             </p>
           </div>
 
           {/* Calendar Display */}
           <Card className="border-[var(--beige-arena)]">
             <CardHeader className="border-b border-[var(--beige-arena)]">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Selecciona tus fechas
-                </CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  {/* Status indicator */}
-                  {loading && (
-                    <div className="flex items-center gap-2 text-[var(--slate-gray)] text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Cargando...
-                    </div>
-                  )}
-                  
-                  {!loading && events.length > 0 && (
-                    <div className="flex items-center gap-2 text-[var(--green-moss)] text-sm">
-                      <div className="w-2 h-2 bg-[var(--green-moss)] rounded-full animate-pulse"></div>
-                      Sincronizado
-                    </div>
-                  )}
-
-                  {process.env.NODE_ENV === 'development' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRefresh}
-                      disabled={loading}
-                      className="text-[var(--slate-gray)] hover:text-[var(--brown-earth)]"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Selecciona tus fechas
+              </CardTitle>
             </CardHeader>
             
             <CardContent className="p-6">
@@ -129,7 +82,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       Cargando calendario
                     </h3>
                     <p className="text-[var(--slate-gray)]">
-                      Obteniendo la disponibilidad más actualizada desde Airbnb...
+                      Obteniendo la disponibilidad más actualizada...
                     </p>
                   </div>
                 </div>
@@ -143,14 +96,6 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <p className="text-[var(--slate-gray)]">
                       {error}
                     </p>
-                    <Button 
-                      onClick={handleRefresh}
-                      variant="outline"
-                      className="mt-4"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Reintentar
-                    </Button>
                   </div>
                 </div>
               ) : (

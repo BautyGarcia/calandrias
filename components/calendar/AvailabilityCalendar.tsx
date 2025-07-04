@@ -7,11 +7,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Calendar as CalendarIcon,
-    Users,
-    Clock,
-    MapPin
+    Users
 } from "lucide-react"
-import { CalendarEvent, CabinInfo } from '@/types/calendar'
+import { CalendarEvent, CabinInfo, CalendarDay } from '@/types/calendar'
 import {
     getCalendarMonth,
     getCabinAvailabilityForDate,
@@ -201,7 +199,7 @@ export default function AvailabilityCalendar({
 }
 
 interface CalendarDayCellProps {
-    day: any
+    day: CalendarDay
     cabins: CabinInfo[]
     events: CalendarEvent[]
     isSelected: boolean

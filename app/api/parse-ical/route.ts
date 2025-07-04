@@ -1,9 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-const ical = require('node-ical')
+import { ParseICalRequest } from '@/types'
+import * as ical from 'node-ical'
+
+interface ICalEvent {
+    type: string
+    start?: Date
+    end?: Date
+    summary?: string
+    description?: string
+    location?: string
+    organizer?: string
+    uid?: string
+    status?: string
+    rrule?: {
+        origOptions?: Record<string, unknown>
+        [key: string]: unknown
+    }
+    exdate?: unknown
+    recurrences?: unknown
+    [key: string]: unknown
+}
+
+interface ProcessedEvent {
+    type: string
+    start: string | null
+    end: string | null
+    summary?: string
+    description?: string
+    location?: string
+    organizer?: string
+    uid?: string
+    status?: string
+    rrule?: {
+        origOptions?: Record<string, unknown>
+        [key: string]: unknown
+    } | null
+    exdate?: unknown
+    recurrences?: unknown
+    [key: string]: unknown
+}
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json()
+        const body: ParseICalRequest = await request.json()
         const { type, data } = body
 
         if (!type || !data) {
@@ -13,7 +52,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        let events
+        let events: Record<string, ICalEvent>
 
         if (type === 'url') {
             // Parsear desde URL
@@ -23,7 +62,7 @@ export async function POST(request: NextRequest) {
                         'User-Agent': 'Calandrias-iCal-Parser/1.0',
                     },
                     timeout: 10000, // 10 segundos de timeout
-                })
+                }) as unknown as Record<string, ICalEvent>
             } catch (error) {
                 console.error('Error parsing from URL:', error)
                 return NextResponse.json(
@@ -34,7 +73,7 @@ export async function POST(request: NextRequest) {
         } else if (type === 'content') {
             // Parsear desde contenido directo
             try {
-                events = await ical.async.parseICS(data)
+                events = await ical.async.parseICS(data) as unknown as Record<string, ICalEvent>
             } catch (error) {
                 console.error('Error parsing content:', error)
                 return NextResponse.json(
@@ -50,33 +89,31 @@ export async function POST(request: NextRequest) {
         }
 
         // Procesar y limpiar los eventos
-        const processedEvents: { [key: string]: any } = {}
+        const processedEvents: Record<string, ProcessedEvent> = {}
 
         for (const [key, event] of Object.entries(events)) {
-            const typedEvent = event as any
-
             // Convertir fechas a strings para serialización JSON
-            const processedEvent = {
-                ...typedEvent,
-                start: typedEvent.start ? typedEvent.start.toISOString() : null,
-                end: typedEvent.end ? typedEvent.end.toISOString() : null,
+            const processedEvent: ProcessedEvent = {
+                ...event,
+                start: event.start ? event.start.toISOString() : null,
+                end: event.end ? event.end.toISOString() : null,
                 // Preservar otros campos importantes
-                type: typedEvent.type,
-                summary: typedEvent.summary,
-                description: typedEvent.description,
-                location: typedEvent.location,
-                organizer: typedEvent.organizer,
-                uid: typedEvent.uid,
-                status: typedEvent.status,
+                type: event.type,
+                summary: event.summary,
+                description: event.description,
+                location: event.location,
+                organizer: event.organizer,
+                uid: event.uid,
+                status: event.status,
                 // Incluir información de recurrencia si existe
-                rrule: typedEvent.rrule ? {
-                    ...typedEvent.rrule,
-                    origOptions: typedEvent.rrule.origOptions,
+                rrule: event.rrule ? {
+                    ...event.rrule,
+                    origOptions: event.rrule.origOptions,
                 } : null,
                 // Incluir fechas de excepción
-                exdate: typedEvent.exdate,
+                exdate: event.exdate,
                 // Incluir recurrencias específicas
-                recurrences: typedEvent.recurrences,
+                recurrences: event.recurrences,
             }
 
             processedEvents[key] = processedEvent
@@ -85,9 +122,9 @@ export async function POST(request: NextRequest) {
         // Estadísticas básicas
         const stats = {
             total: Object.keys(processedEvents).length,
-            vevents: Object.values(processedEvents).filter((e: any) => e.type === 'VEVENT').length,
-            vtimezones: Object.values(processedEvents).filter((e: any) => e.type === 'VTIMEZONE').length,
-            vcalendars: Object.values(processedEvents).filter((e: any) => e.type === 'VCALENDAR').length,
+            vevents: Object.values(processedEvents).filter((e: ProcessedEvent) => e.type === 'VEVENT').length,
+            vtimezones: Object.values(processedEvents).filter((e: ProcessedEvent) => e.type === 'VTIMEZONE').length,
+            vcalendars: Object.values(processedEvents).filter((e: ProcessedEvent) => e.type === 'VCALENDAR').length,
         }
 
         return NextResponse.json({

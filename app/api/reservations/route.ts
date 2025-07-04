@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { StrapiAPI, strapiToLocalReservation } from '@/lib/strapi'
+import { CreateReservationRequest } from '@/types'
 
 export async function GET(request: NextRequest) {
     try {
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json()
+        const body: CreateReservationRequest = await request.json()
 
         // Validar datos requeridos
         if (!body.cabinId || !body.checkIn || !body.checkOut || !body.guestName) {

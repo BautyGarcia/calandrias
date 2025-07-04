@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { LocalReservation } from '@/utils/ical-generator'
+import { LocalReservation } from '@/types'
 
 export default function AdminReservas() {
     const [reservations, setReservations] = useState<LocalReservation[]>([])

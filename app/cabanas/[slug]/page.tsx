@@ -206,25 +206,6 @@ export default async function CabinPage({ params }: PageProps) {
             <CabinCalendarSection
                 cabin={cabin}
             />
-
-            {/* CTA Section */}
-            <section className="py-16 bg-[var(--brown-earth)]">
-                <div className="container mx-auto px-4 text-center">
-                    <h2 className="text-3xl font-serif text-white mb-6">
-                        ¿Listo para reservar {cabin.name}?
-                    </h2>
-                    <p className="text-[var(--light-sand)] mb-8 max-w-2xl mx-auto">
-                        Vive una experiencia única en {cabin.subtitle.toLowerCase()}.
-                        Reserva ahora y asegura tu escape perfecto en las montañas.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" variant="sand" className="font-medium px-8">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Reservar ${cabin.price}/noche
-                        </Button>
-                    </div>
-                </div>
-            </section>
         </main>
     )
 } 

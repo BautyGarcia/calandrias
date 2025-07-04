@@ -32,7 +32,7 @@ export function Header() {
           <Link href="/#contacto">
             <Button variant="ghost" size="sm" className="text-[var(--brown-earth)]">Contacto</Button>
           </Link>
-          <Link href="/#reservar">
+          <Link href="/cabanas">
             <Button variant="wood" size="sm" className="ml-2">Reservar</Button>
           </Link>
         </nav>
@@ -64,7 +64,7 @@ export function Header() {
                 <Link href="/#contacto">
                   <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Contacto</Button>
                 </Link>
-                <Link href="/#reservar">
+                <Link href="/cabanas">
                   <Button variant="wood" size="sm" className="justify-start w-full mt-2">Reservar</Button>
                 </Link>
               </nav>

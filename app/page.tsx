@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import Image from "next/image";
 import {
   Accordion,
@@ -53,10 +54,11 @@ export default function Home() {
                 Un lugar para desconectar, relajarse y crear recuerdos inolvidables.
               </p>
               <div className="flex flex-col sm:flex-row gap-6 pt-6 slide-up-delay-2">
-                <Button size="lg" variant="wood" className="text-xl py-7 px-8 hover:scale-105 transition-transform">Reservar ahora</Button>
-                <Button size="lg" variant="outline" className="text-xl py-7 px-8 border-[var(--brown-earth)] text-[var(--brown-earth)] hover:scale-105 transition-transform">
-                  Ver cabañas
-                </Button>
+                <Link href="/cabanas">
+                  <Button size="lg" variant="wood" className="text-xl py-7 px-8 hover:scale-105 transition-transform">
+                    Reservar ahora
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="flex-1 relative w-full h-[400px] md:h-[600px] rounded-md overflow-hidden scale-in" style={{ animationDelay: '0.3s' }}>
@@ -127,12 +129,13 @@ export default function Home() {
             ¿Listo para tu próxima aventura?
           </h2>
           <p className="text-[var(--light-sand)] mb-8 max-w-2xl mx-auto">
-            Reserva ahora y obtén un 15% de descuento en estadías de 3 noches o más.
-            Oferta válida hasta fin de mes.
+            Descubre la tranquilidad de las sierras y vive una experiencia única en nuestras cabañas.
           </p>
-          <Button size="lg" variant="sand" className="font-medium">
-            Reservar con descuento
-          </Button>
+          <Link href="/cabanas">
+            <Button size="lg" variant="sand" className="font-medium">
+              Reservar ahora
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -249,12 +252,16 @@ export default function Home() {
             Nuestras cabañas te esperan para brindarte momentos inolvidables.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="sand" className="font-medium">
-              Reservar ahora
-            </Button>
-            <Button size="lg" variant="outline" className="text-[var(--light-sand)] border-[var(--light-sand)]">
-              Contactar
-            </Button>
+            <Link href="/cabanas">
+              <Button size="lg" variant="sand" className="font-medium">
+                Reservar ahora
+              </Button>
+            </Link>
+            <Link href="/cabanas">
+              <Button size="lg" variant="outline" className="text-[var(--light-sand)] border-[var(--light-sand)]">
+                Contactar
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

@@ -1,32 +1,4 @@
-import { LocalReservation } from '@/utils/ical-generator'
-
-interface StrapiReservation {
-    id: number
-    documentId: string
-    cabinId: string
-    checkIn: string
-    checkOut: string
-    guestName: string
-    guestEmail: string
-    guestPhone?: string | null
-    adults: number
-    children: number
-    pets: number
-    status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
-    source: 'airbnb' | 'direct' | 'manual'
-    externalId?: string | null
-    reservationCode?: string | null
-    totalPrice?: number | null
-    currency?: string | null
-    specialRequests?: string | null
-    createdAt: string
-    updatedAt: string
-    publishedAt?: string | null
-    locale?: string | null
-    createdBy?: unknown | null
-    updatedBy?: unknown | null
-    localizations?: unknown[]
-}
+import { LocalReservation, StrapiReservation, StrapiReservationInput, StrapiReservationUpdate } from '@/types'
 
 export class StrapiAPI {
     private baseURL: string
@@ -75,24 +47,7 @@ export class StrapiAPI {
     }
 
     // Crear nueva reserva
-    async createReservation(reservationData: {
-        cabinId: string
-        checkIn: string
-        checkOut: string
-        guestName: string
-        guestEmail: string
-        guestPhone?: string
-        adults: number
-        children: number
-        pets: number
-        status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
-        source: 'airbnb' | 'direct' | 'manual'
-        externalId?: string
-        reservationCode?: string
-        totalPrice?: number
-        currency?: string
-        specialRequests?: string
-    }): Promise<StrapiReservation> {
+    async createReservation(reservationData: StrapiReservationInput): Promise<StrapiReservation> {
         const response = await this.request<StrapiReservation>('/reservations', {
             method: 'POST',
             body: JSON.stringify({
@@ -104,24 +59,7 @@ export class StrapiAPI {
     }
 
     // Actualizar reserva existente
-    async updateReservation(id: number, reservationData: Partial<{
-        cabinId: string
-        checkIn: string
-        checkOut: string
-        guestName: string
-        guestEmail: string
-        guestPhone?: string
-        adults: number
-        children: number
-        pets: number
-        status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
-        source: 'airbnb' | 'direct' | 'manual'
-        externalId?: string
-        reservationCode?: string
-        totalPrice?: number
-        currency?: string
-        specialRequests?: string
-    }>): Promise<StrapiReservation> {
+    async updateReservation(id: number, reservationData: StrapiReservationUpdate): Promise<StrapiReservation> {
         const response = await this.request<StrapiReservation>(`/reservations/${id}`, {
             method: 'PUT',
             body: JSON.stringify({
@@ -165,7 +103,7 @@ export class StrapiAPI {
 }
 
 // Función helper para convertir StrapiReservation a formato local
-export function strapiToLocalReservation(strapiReservation: StrapiReservation) {
+export function strapiToLocalReservation(strapiReservation: StrapiReservation): LocalReservation {
     return {
         id: strapiReservation.id.toString(), // Convertir a string para LocalReservation
         cabinId: strapiReservation.cabinId,
@@ -190,7 +128,7 @@ export function strapiToLocalReservation(strapiReservation: StrapiReservation) {
 }
 
 // Función helper para convertir formato local a Strapi
-export function localToStrapiReservation(localReservation: LocalReservation) {
+export function localToStrapiReservation(localReservation: LocalReservation): StrapiReservationInput {
     return {
         cabinId: localReservation.cabinId,
         checkIn: localReservation.checkIn.toISOString().split('T')[0],

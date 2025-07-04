@@ -1,3 +1,4 @@
+// Tipo local para los datos de cabañas existentes
 export interface CabinFeature {
     icon: string; // String identifier for icon
     label: string;

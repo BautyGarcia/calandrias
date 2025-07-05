@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
     RefreshCw,
-    Download,
     Calendar,
     Users,
     AlertTriangle,
@@ -17,10 +16,12 @@ import {
     Clock,
     XCircle,
     Home,
-    Filter
+    Filter,
+    Check,
+    X
 } from "lucide-react"
 import { LocalReservation } from '@/types'
-import { getCabinDisplayName, getAllCabinIds } from '@/utils/cabins'
+import { getCabinDisplayName } from '@/utils/cabins'
 
 interface ConflictDetection {
     id: string
@@ -35,6 +36,7 @@ export default function AdminReservas() {
     const [syncing, setSyncing] = useState(false)
     const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'cancelled'>('all')
     const [conflicts, setConflicts] = useState<ConflictDetection[]>([])
+    const [actionLoading, setActionLoading] = useState<string | null>(null)
 
     const fetchReservations = useCallback(async () => {
         try {
@@ -127,12 +129,82 @@ export default function AdminReservas() {
         }
     }
 
+    const handleConfirmReservation = async (reservationId: string) => {
+        setActionLoading(reservationId)
+        try {
+            // Find the reservation to get its documentId
+            const reservation = reservations.find(r => r.id === reservationId)
+            if (!reservation) {
+                throw new Error('Reserva no encontrada')
+            }
+
+            const response = await fetch('/api/reservations/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    documentId: reservation.documentId
+                })
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al confirmar la reserva')
+            }
+
+            // Refrescar datos
+            await fetchReservations()
+        } catch (error) {
+            console.error('Error confirming reservation:', error)
+            alert(`Error al confirmar la reserva: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const handleCancelReservation = async (reservationId: string) => {
+        setActionLoading(reservationId)
+        try {
+            // Find the reservation to get its documentId
+            const reservation = reservations.find(r => r.id === reservationId)
+            if (!reservation) {
+                throw new Error('Reserva no encontrada')
+            }
+
+            const response = await fetch('/api/reservations/cancel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    documentId: reservation.documentId
+                })
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al cancelar la reserva')
+            }
+
+            // Refrescar datos
+            await fetchReservations()
+        } catch (error) {
+            console.error('Error cancelling reservation:', error)
+            alert(`Error al cancelar la reserva: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'confirmed':
                 return <Badge className="bg-[var(--green-moss)] text-white">Confirmada</Badge>
             case 'pending':
-                return <Badge className="bg-[var(--beige-arena)] text-[var(--brown-earth)]">Pendiente</Badge>
+                return <Badge className="bg-amber-100 text-amber-800 border-amber-300">Pendiente</Badge>
             case 'cancelled':
                 return <Badge className="bg-[var(--slate-gray)] text-white">Cancelada</Badge>
             default:
@@ -151,6 +223,53 @@ export default function AdminReservas() {
             default:
                 return <Badge className="bg-[var(--light-sand)] text-[var(--slate-gray)]">Otro</Badge>
         }
+    }
+
+    const canModifyReservation = (reservation: LocalReservation) => {
+        // Solo permitir modificar reservas directas o manuales, no de Airbnb
+        return reservation.source !== 'airbnb' && reservation.status !== 'cancelled'
+    }
+
+    const getActionButtons = (reservation: LocalReservation) => {
+        if (!canModifyReservation(reservation)) {
+            return (
+                <div className="flex items-center justify-center">
+                    <span className="text-xs text-[var(--slate-gray)]">No editable</span>
+                </div>
+            )
+        }
+
+        const isLoading = actionLoading === reservation.id
+
+        return (
+            <div className="flex items-center gap-1">
+                {reservation.status === 'pending' && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleConfirmReservation(reservation.id)}
+                        disabled={isLoading}
+                        className="h-8 w-8 p-0 border-green-300 text-green-700 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Confirmar reserva"
+                    >
+                        <Check className="h-3 w-3" />
+                    </Button>
+                )}
+                
+                {(reservation.status === 'pending' || reservation.status === 'confirmed') && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCancelReservation(reservation.id)}
+                        disabled={isLoading}
+                        className="h-8 w-8 p-0 border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Cancelar reserva"
+                    >
+                        <X className="h-3 w-3" />
+                    </Button>
+                )}
+            </div>
+        )
     }
 
     if (loading) {
@@ -206,17 +325,6 @@ export default function AdminReservas() {
                                         <RefreshCw className="h-4 w-4 mr-2" />
                                     )}
                                     Sincronizar Airbnb
-                                </Button>
-
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    className="border-[var(--green-moss)] text-[var(--green-moss)] hover:bg-[var(--soft-cream)]"
-                                >
-                                    <a href={`/api/cabins/${getAllCabinIds()[0]}/ical`} target="_blank">
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Descargar iCal
-                                    </a>
                                 </Button>
                             </div>
                         </div>
@@ -275,9 +383,9 @@ export default function AdminReservas() {
                     <Card className="border-[var(--beige-arena)]">
                         <CardContent>
                             <div className="flex items-center space-x-2">
-                                <Clock className="h-5 w-5 text-[var(--beige-arena)]" />
+                                <Clock className="h-5 w-5 text-amber-600" />
                                 <div>
-                                    <div className="text-2xl font-bold text-[var(--brown-earth)]">
+                                    <div className="text-2xl font-bold text-amber-600">
                                         {stats.pending}
                                     </div>
                                     <div className="text-sm text-[var(--slate-gray)]">Pendientes</div>
@@ -377,6 +485,9 @@ export default function AdminReservas() {
                                         <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
                                             Total
                                         </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Acciones
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-[var(--beige-arena)]">
@@ -388,7 +499,7 @@ export default function AdminReservas() {
                                         return (
                                             <tr
                                                 key={reservation.id}
-                                                className={`hover:bg-[var(--soft-cream)] ${hasConflict ? 'bg-red-50' : ''}`}
+                                                className={hasConflict ? 'bg-red-50' : ''}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
@@ -435,6 +546,10 @@ export default function AdminReservas() {
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--brown-earth)]">
                                                     {reservation.totalPrice ? `$${reservation.totalPrice.toLocaleString('es-AR')}` : '-'}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    {getActionButtons(reservation)}
                                                 </td>
                                             </tr>
                                         )

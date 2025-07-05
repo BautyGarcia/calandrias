@@ -76,6 +76,28 @@ export class StrapiAPI {
         })
     }
 
+    // Confirmar reserva
+    async confirmReservation(documentId: string): Promise<boolean> {
+        const response = await this.request<boolean>('/reservations/confirm', {
+            method: 'POST',
+            body: JSON.stringify({
+                id: documentId
+            })
+        })
+        return response
+    }
+
+    // Cancelar reserva
+    async cancelReservation(documentId: string): Promise<boolean> {
+        const response = await this.request<boolean>('/reservations/cancel', {
+            method: 'POST',
+            body: JSON.stringify({
+                id: documentId
+            })
+        })
+        return response
+    }
+
     // Obtener reservas por rango de fechas
     async getReservationsByDateRange(cabinId: string, startDate: string, endDate: string): Promise<StrapiReservation[]> {
         const endpoint = `/reservations?filters[cabinId][$eq]=${cabinId}&filters[checkIn][$gte]=${startDate}&filters[checkOut][$lte]=${endDate}&sort=checkIn:asc`
@@ -119,6 +141,7 @@ export class StrapiAPI {
 export function strapiToLocalReservation(strapiReservation: StrapiReservation): LocalReservation {
     return {
         id: strapiReservation.id.toString(),
+        documentId: strapiReservation.documentId,
         cabinId: strapiReservation.cabinId,
         checkIn: new Date(strapiReservation.checkIn),
         checkOut: new Date(strapiReservation.checkOut),

@@ -1,5 +1,6 @@
 export interface LocalReservation {
     id: string
+    documentId: string
     cabinId: string
     checkIn: Date
     checkOut: Date

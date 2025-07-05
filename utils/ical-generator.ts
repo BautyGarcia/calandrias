@@ -20,7 +20,7 @@ export function generateICalForCabin(reservations: LocalReservation[], cabinName
     ]
 
     reservations.forEach(reservation => {
-        if (reservation.status === 'confirmed' || reservation.status === 'blocked') {
+        if (reservation.status === 'confirmed' || reservation.status === 'blocked' || reservation.status === 'pending') {
             const event = generateICalEvent(reservation)
             ical = ical.concat(event)
         }

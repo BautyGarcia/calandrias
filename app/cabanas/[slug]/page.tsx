@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation"
 import { getCabinBySlug, getAllCabinSlugs } from "@/data/cabins"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import CabinCalendarSection from "@/components/CabinCalendarSection"
 import { Icon } from "@/utils/icons"
@@ -8,7 +7,6 @@ import {
     Users,
     Bed,
     Bath,
-    Calendar,
     Mountain,
     Tv,
     Snowflake,
@@ -80,10 +78,6 @@ export default async function CabinPage({ params }: PageProps) {
                                 <span className="text-3xl font-bold text-[var(--brown-earth)]">
                                     ${cabin.price}/noche
                                 </span>
-                                <Button variant="moss" size="lg" className="px-8">
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    Reservar ahora
-                                </Button>
                             </div>
                         </div>
 

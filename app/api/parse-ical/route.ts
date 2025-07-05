@@ -1,44 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ParseICalRequest } from '@/types'
+import { ParseICalRequest, ICalRawEvent, ProcessedEvent } from '@/types'
 import * as ical from 'node-ical'
-
-interface ICalEvent {
-    type: string
-    start?: Date
-    end?: Date
-    summary?: string
-    description?: string
-    location?: string
-    organizer?: string
-    uid?: string
-    status?: string
-    rrule?: {
-        origOptions?: Record<string, unknown>
-        [key: string]: unknown
-    }
-    exdate?: unknown
-    recurrences?: unknown
-    [key: string]: unknown
-}
-
-interface ProcessedEvent {
-    type: string
-    start: string | null
-    end: string | null
-    summary?: string
-    description?: string
-    location?: string
-    organizer?: string
-    uid?: string
-    status?: string
-    rrule?: {
-        origOptions?: Record<string, unknown>
-        [key: string]: unknown
-    } | null
-    exdate?: unknown
-    recurrences?: unknown
-    [key: string]: unknown
-}
 
 export async function POST(request: NextRequest) {
     try {
@@ -52,7 +14,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        let events: Record<string, ICalEvent>
+        let events: Record<string, ICalRawEvent>
 
         if (type === 'url') {
             // Parsear desde URL
@@ -62,7 +24,7 @@ export async function POST(request: NextRequest) {
                         'User-Agent': 'Calandrias-iCal-Parser/1.0',
                     },
                     timeout: 10000, // 10 segundos de timeout
-                }) as unknown as Record<string, ICalEvent>
+                }) as unknown as Record<string, ICalRawEvent>
             } catch (error) {
                 console.error('Error parsing from URL:', error)
                 return NextResponse.json(
@@ -73,7 +35,7 @@ export async function POST(request: NextRequest) {
         } else if (type === 'content') {
             // Parsear desde contenido directo
             try {
-                events = await ical.async.parseICS(data) as unknown as Record<string, ICalEvent>
+                events = await ical.async.parseICS(data) as unknown as Record<string, ICalRawEvent>
             } catch (error) {
                 console.error('Error parsing content:', error)
                 return NextResponse.json(

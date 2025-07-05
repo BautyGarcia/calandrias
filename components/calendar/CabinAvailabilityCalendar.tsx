@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CalendarEvent } from '@/types/calendar'
 import { getCabinAvailabilityForDate } from '@/utils/calendar'
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, isAfter, isBefore, eachDayOfInterval } from 'date-fns'
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, isAfter, isBefore, eachDayOfInterval, startOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export interface DateRange {
@@ -24,7 +24,8 @@ const AVAILABILITY_COLORS = {
     available: 'hover:bg-[var(--soft-cream)] hover:border-[var(--green-moss)] text-[var(--brown-earth)] border-[var(--beige-arena)]',
     reserved: 'bg-red-50 border-red-200 text-red-700 cursor-not-allowed',
     blocked: 'bg-[var(--slate-gray)]/10 border-[var(--slate-gray)]/30 text-[var(--slate-gray)] cursor-not-allowed',
-    maintenance: 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
+    maintenance: 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed',
+    past: 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
 }
 
 export default function CabinAvailabilityCalendar({ cabinId, events, selectedRange, onRangeChange }: CabinAvailabilityCalendarProps) {
@@ -47,7 +48,18 @@ export default function CabinAvailabilityCalendar({ cabinId, events, selectedRan
         setCurrentMonth(prev => addMonths(prev, 1))
     }
 
+    const isPastDate = (date: Date) => {
+        const today = startOfDay(new Date())
+        const checkDate = startOfDay(date)
+        return isBefore(checkDate, today)
+    }
+
     const getDateAvailability = (date: Date) => {
+        // Check if date is in the past
+        if (isPastDate(date)) {
+            return 'past'
+        }
+        
         const availability = getCabinAvailabilityForDate(date, cabinId, events)
         return availability
     }
@@ -66,7 +78,7 @@ export default function CabinAvailabilityCalendar({ cabinId, events, selectedRan
     const handleDateClick = (date: Date) => {
         const availability = getDateAvailability(date)
 
-        // Don't allow selection of unavailable dates
+        // Don't allow selection of unavailable dates (including past dates)
         if (availability !== 'available') {
             return
         }

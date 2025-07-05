@@ -1,32 +1,11 @@
 import { CabinInfo } from '@/types/calendar'
+import { CABIN_CONFIGS } from '@/utils/cabins'
 
-export const CALENDAR_CABINS: CabinInfo[] = [
-  {
-    id: 'refugio-intimo',
-    name: 'Refugio Íntimo',
-    slug: 'refugio-intimo',
-    capacity: 2,
-    color: '#22c55e' // green-500
-  },
-  {
-    id: 'confort-familiar',
-    name: 'Confort Familiar',
-    slug: 'confort-familiar',
-    capacity: 4,
-    color: '#3b82f6' // blue-500
-  },
-  {
-    id: 'experiencia-premium',
-    name: 'Experiencia Premium',
-    slug: 'experiencia-premium',
-    capacity: 6,
-    color: '#f59e0b' // amber-500
-  },
-  {
-    id: 'retiro-exclusivo',
-    name: 'Retiro Exclusivo',
-    slug: 'retiro-exclusivo',
-    capacity: 8,
-    color: '#8b5cf6' // violet-500
-  }
-] 
+// Exportar CALENDAR_CABINS basado en la configuración centralizada
+export const CALENDAR_CABINS: CabinInfo[] = CABIN_CONFIGS.map(cabin => ({
+  id: cabin.id,
+  name: cabin.name,
+  slug: cabin.slug,
+  capacity: cabin.capacity,
+  color: cabin.color
+})) 

@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseAirbnbICalEvents, airbnbEventToReservation } from '@/utils/ical-generator'
 import { StrapiAPI, localToStrapiReservation } from '@/lib/strapi'
-
-// Configuración de cabañas y sus URLs de Airbnb
-const CABIN_CONFIG = {
-    'refugio-intimo': {
-        name: 'Refugio Íntimo',
-        icalUrl: process.env.AIRBNB_REFUGIO_INTIMO_ICAL || ''
-    }
-    // En el futuro agregar:
-    // 'confort-familiar': {
-    //   name: 'Confort Familiar',
-    //   icalUrl: process.env.AIRBNB_CONFORT_FAMILIAR_ICAL || ''
-    // },
-    // ... resto de cabañas
-}
+import { AIRBNB_CABIN_CONFIG } from '@/utils/cabins'
 
 export async function GET(request: NextRequest) {
     // Verificar autorización del cron job
@@ -27,7 +14,7 @@ export async function GET(request: NextRequest) {
     const strapiAPI = new StrapiAPI()
 
     try {
-        for (const [cabinId, config] of Object.entries(CABIN_CONFIG)) {
+        for (const [cabinId, config] of Object.entries(AIRBNB_CABIN_CONFIG)) {
             try {
                 if (!config.icalUrl) {
                     throw new Error(`URL de iCal no configurada para ${cabinId}`)

@@ -3,12 +3,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+    RefreshCw,
+    Download,
+    Calendar,
+    Users,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    XCircle,
+    Home,
+    Filter
+} from "lucide-react"
 import { LocalReservation } from '@/types'
+import { getCabinDisplayName, getAllCabinIds } from '@/utils/cabins'
+
+interface ConflictDetection {
+    id: string
+    type: 'overlap' | 'same_dates'
+    reservations: LocalReservation[]
+    message: string
+}
 
 export default function AdminReservas() {
     const [reservations, setReservations] = useState<LocalReservation[]>([])
     const [loading, setLoading] = useState(true)
+    const [syncing, setSyncing] = useState(false)
     const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'cancelled'>('all')
+    const [conflicts, setConflicts] = useState<ConflictDetection[]>([])
 
     const fetchReservations = useCallback(async () => {
         try {
@@ -23,6 +49,7 @@ export default function AdminReservas() {
 
             if (response.ok) {
                 setReservations(data.reservations)
+                detectConflicts(data.reservations)
             } else {
                 console.error('Error:', data.error)
             }
@@ -33,228 +60,397 @@ export default function AdminReservas() {
         }
     }, [filter])
 
+    const detectConflicts = (reservationList: LocalReservation[]) => {
+        const conflicts: ConflictDetection[] = []
+        const activeReservations = reservationList.filter(r => r.status !== 'cancelled')
+
+        for (let i = 0; i < activeReservations.length; i++) {
+            for (let j = i + 1; j < activeReservations.length; j++) {
+                const res1 = activeReservations[i]
+                const res2 = activeReservations[j]
+
+                // Solo verificar conflictos en la misma cabaña
+                if (res1.cabinId !== res2.cabinId) continue
+
+                const start1 = new Date(res1.checkIn)
+                const end1 = new Date(res1.checkOut)
+                const start2 = new Date(res2.checkIn)
+                const end2 = new Date(res2.checkOut)
+
+                // Verificar solapamiento
+                const hasOverlap = start1 < end2 && start2 < end1
+
+                if (hasOverlap) {
+                    const conflictId = `${res1.id}-${res2.id}`
+                    const existingConflict = conflicts.find(c => c.id === conflictId)
+
+                    if (!existingConflict) {
+                        conflicts.push({
+                            id: conflictId,
+                            type: (start1.getTime() === start2.getTime() && end1.getTime() === end2.getTime()) ? 'same_dates' : 'overlap',
+                            reservations: [res1, res2],
+                            message: `Conflicto entre ${res1.source} y ${res2.source} en ${res1.cabinId}`
+                        })
+                    }
+                }
+            }
+        }
+
+        setConflicts(conflicts)
+    }
+
     useEffect(() => {
         fetchReservations()
     }, [fetchReservations])
 
     const syncAirbnb = async () => {
         try {
-            setLoading(true)
+            setSyncing(true)
             const response = await fetch('/api/cron/sync-airbnb', {
                 headers: {
                     'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test-secret'}`
                 }
             })
-            
+
             const data = await response.json()
-            
+
             if (response.ok) {
-                fetchReservations();
+                await fetchReservations()
             } else {
                 alert(`Error en sincronización: ${data.error}`)
             }
         } catch (error) {
             console.error('Error syncing:', error)
             alert('Error de conexión en la sincronización')
+        } finally {
+            setSyncing(false)
         }
     }
 
-    const getStatusColor = (status: string) => {
+    const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'confirmed': return 'bg-green-100 text-green-800'
-            case 'pending': return 'bg-yellow-100 text-yellow-800'
-            case 'cancelled': return 'bg-red-100 text-red-800'
-            case 'blocked': return 'bg-gray-100 text-gray-800'
-            default: return 'bg-gray-100 text-gray-800'
+            case 'confirmed':
+                return <Badge className="bg-[var(--green-moss)] text-white">Confirmada</Badge>
+            case 'pending':
+                return <Badge className="bg-[var(--beige-arena)] text-[var(--brown-earth)]">Pendiente</Badge>
+            case 'cancelled':
+                return <Badge className="bg-[var(--slate-gray)] text-white">Cancelada</Badge>
+            default:
+                return <Badge className="bg-[var(--light-sand)] text-[var(--brown-earth)]">Bloqueada</Badge>
         }
     }
 
-    const getSourceColor = (source: string) => {
+    const getSourceBadge = (source: string) => {
         switch (source) {
-            case 'airbnb': return 'bg-pink-100 text-pink-800'
-            case 'direct': return 'bg-blue-100 text-blue-800'
-            case 'manual': return 'bg-purple-100 text-purple-800'
-            default: return 'bg-gray-100 text-gray-800'
+            case 'airbnb':
+                return <Badge className="bg-pink-100 text-pink-800 border-pink-200">Airbnb</Badge>
+            case 'direct':
+                return <Badge className="bg-[var(--soft-cream)] text-[var(--brown-earth)] border-[var(--beige-arena)]">Directa</Badge>
+            case 'manual':
+                return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Manual</Badge>
+            default:
+                return <Badge className="bg-[var(--light-sand)] text-[var(--slate-gray)]">Otro</Badge>
         }
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-lg">Cargando reservas...</div>
+            <div className="min-h-screen bg-[var(--soft-cream)] flex items-center justify-center">
+                <div className="text-center">
+                    <RefreshCw className="h-8 w-8 animate-spin text-[var(--brown-earth)] mx-auto mb-4" />
+                    <p className="text-[var(--brown-earth)] text-lg">Cargando panel de administración...</p>
+                </div>
             </div>
         )
     }
 
+    const filteredReservations = reservations.filter(reservation => {
+        if (filter === 'all') return true
+        return reservation.status === filter
+    })
+
+    const stats = {
+        total: reservations.length,
+        confirmed: reservations.filter(r => r.status === 'confirmed').length,
+        pending: reservations.filter(r => r.status === 'pending').length,
+        airbnb: reservations.filter(r => r.source === 'airbnb').length,
+        direct: reservations.filter(r => r.source === 'direct').length
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-[var(--soft-cream)] p-6">
             <div className="max-w-7xl mx-auto">
-
                 {/* Header */}
-                <div className="bg-white rounded-lg shadow p-6 mb-6">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Panel de Reservas</h1>
-                            <p className="text-gray-600">Gestión de reservas de todas las fuentes</p>
-                        </div>
+                <Card className="border-[var(--beige-arena)] mb-6">
+                    <CardHeader className="border-b border-[var(--beige-arena)]">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="text-2xl text-[var(--brown-earth)] font-serif">
+                                    Panel de Administración
+                                </CardTitle>
+                                <p className="text-[var(--slate-gray)] mt-2">
+                                    Gestión centralizada de reservas de Calandrias
+                                </p>
+                            </div>
 
-                        <div className="flex gap-4">
-                            <button
-                                onClick={syncAirbnb}
-                                className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
-                            >
-                                🔄 Sincronizar Airbnb
-                            </button>
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={syncAirbnb}
+                                    disabled={syncing}
+                                    variant="outline"
+                                    className="border-[var(--brown-earth)] text-[var(--brown-earth)] hover:bg-[var(--light-sand)]"
+                                >
+                                    {syncing ? (
+                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                    )}
+                                    Sincronizar Airbnb
+                                </Button>
 
-                            <a
-                                href="/api/cabins/refugio-intimo/ical"
-                                target="_blank"
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                📅 Descargar iCal
-                            </a>
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="border-[var(--green-moss)] text-[var(--green-moss)] hover:bg-[var(--soft-cream)]"
+                                >
+                                    <a href={`/api/cabins/${getAllCabinIds()[0]}/ical`} target="_blank">
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Descargar iCal
+                                    </a>
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    </CardHeader>
+                </Card>
+
+                {/* Conflictos Alert */}
+                {conflicts.length > 0 && (
+                    <Alert className="border-red-200 bg-red-50 mb-6">
+                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <AlertTitle className="text-red-800">
+                            Conflictos Detectados ({conflicts.length})
+                        </AlertTitle>
+                        <AlertDescription className="text-red-700">
+                            <div className="mt-2 space-y-1">
+                                {conflicts.map((conflict) => (
+                                    <div key={conflict.id} className="text-sm">
+                                        • {conflict.message}
+                                    </div>
+                                ))}
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Estadísticas */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <Card className="border-[var(--beige-arena)]">
+                        <CardContent>
+                            <div className="flex items-center space-x-2">
+                                <Calendar className="h-5 w-5 text-[var(--brown-earth)]" />
+                                <div>
+                                    <div className="text-2xl font-bold text-[var(--brown-earth)]">
+                                        {stats.total}
+                                    </div>
+                                    <div className="text-sm text-[var(--slate-gray)]">Total</div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-[var(--beige-arena)]">
+                        <CardContent>
+                            <div className="flex items-center space-x-2">
+                                <CheckCircle className="h-5 w-5 text-[var(--green-moss)]" />
+                                <div>
+                                    <div className="text-2xl font-bold text-[var(--green-moss)]">
+                                        {stats.confirmed}
+                                    </div>
+                                    <div className="text-sm text-[var(--slate-gray)]">Confirmadas</div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-[var(--beige-arena)]">
+                        <CardContent>
+                            <div className="flex items-center space-x-2">
+                                <Clock className="h-5 w-5 text-[var(--beige-arena)]" />
+                                <div>
+                                    <div className="text-2xl font-bold text-[var(--brown-earth)]">
+                                        {stats.pending}
+                                    </div>
+                                    <div className="text-sm text-[var(--slate-gray)]">Pendientes</div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-[var(--beige-arena)]">
+                        <CardContent>
+                            <div className="flex items-center space-x-2">
+                                <Home className="h-5 w-5 text-pink-600" />
+                                <div>
+                                    <div className="text-2xl font-bold text-pink-600">
+                                        {stats.airbnb}
+                                    </div>
+                                    <div className="text-sm text-[var(--slate-gray)]">Airbnb</div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-[var(--beige-arena)]">
+                        <CardContent>
+                            <div className="flex items-center space-x-2">
+                                <Users className="h-5 w-5 text-[var(--green-moss)]" />
+                                <div>
+                                    <div className="text-2xl font-bold text-[var(--green-moss)]">
+                                        {stats.direct}
+                                    </div>
+                                    <div className="text-sm text-[var(--slate-gray)]">Directas</div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Filtros */}
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex gap-2">
-                        <span className="text-gray-700 font-medium mr-4">Filtrar por estado:</span>
-                        {(['all', 'confirmed', 'pending', 'cancelled'] as const).map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setFilter(status)}
-                                className={`px-3 py-1 rounded-lg text-sm transition-colors ${filter === status
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                            >
-                                {status === 'all' ? 'Todas' :
-                                    status === 'confirmed' ? 'Confirmadas' :
-                                        status === 'pending' ? 'Pendientes' :
-                                            'Canceladas'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-blue-600">
-                            {reservations.filter(r => r.status === 'confirmed').length}
+                <Card className="border-[var(--beige-arena)] mb-6">
+                    <CardContent>
+                        <div className="flex items-center gap-4">
+                            <Filter className="h-4 w-4 text-[var(--brown-earth)]" />
+                            <span className="text-[var(--brown-earth)] font-medium">Filtrar por estado:</span>
+                            <div className="flex gap-2">
+                                {(['all', 'confirmed', 'pending', 'cancelled'] as const).map((status) => (
+                                    <Button
+                                        key={status}
+                                        onClick={() => setFilter(status)}
+                                        variant={filter === status ? "default" : "outline"}
+                                        size="sm"
+                                        className={filter === status
+                                            ? "bg-[var(--brown-earth)] text-white"
+                                            : "border-[var(--beige-arena)] text-[var(--brown-earth)] hover:bg-[var(--light-sand)]"
+                                        }
+                                    >
+                                        {status === 'all' ? 'Todas' :
+                                            status === 'confirmed' ? 'Confirmadas' :
+                                                status === 'pending' ? 'Pendientes' :
+                                                    'Canceladas'}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="text-gray-600">Confirmadas</div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-pink-600">
-                            {reservations.filter(r => r.source === 'airbnb').length}
-                        </div>
-                        <div className="text-gray-600">Desde Airbnb</div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-green-600">
-                            {reservations.filter(r => r.source === 'direct').length}
-                        </div>
-                        <div className="text-gray-600">Directas</div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-gray-600">
-                            {reservations.length}
-                        </div>
-                        <div className="text-gray-600">Total</div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {/* Tabla de reservas */}
-                <div className="bg-white rounded-lg shadow">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Huésped
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Fechas
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Cabaña
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Fuente
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Estado
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Código
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {reservations.map((reservation) => (
-                                    <tr key={reservation.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {reservation.guestName}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {reservation.adults} adultos
-                                                {reservation.children > 0 && `, ${reservation.children} niños`}
-                                                {reservation.pets > 0 && `, ${reservation.pets} mascotas`}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {format(reservation.checkIn, 'dd/MM/yyyy', { locale: es })}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                hasta {format(reservation.checkOut, 'dd/MM/yyyy', { locale: es })}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {reservation.cabinId === 'refugio-intimo' ? 'Refugio Íntimo' : reservation.cabinId}
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSourceColor(reservation.source)}`}>
-                                                {reservation.source === 'airbnb' ? 'Airbnb' :
-                                                    reservation.source === 'direct' ? 'Directa' :
-                                                        'Manual'}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(reservation.status)}`}>
-                                                {reservation.status === 'confirmed' ? 'Confirmada' :
-                                                    reservation.status === 'pending' ? 'Pendiente' :
-                                                        reservation.status === 'cancelled' ? 'Cancelada' :
-                                                            'Bloqueada'}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {reservation.reservationCode}
-                                        </td>
+                <Card className="border-[var(--beige-arena)]">
+                    <CardHeader className="border-b border-[var(--beige-arena)]">
+                        <CardTitle className="text-[var(--brown-earth)]">
+                            Reservas ({filteredReservations.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-[var(--beige-arena)]">
+                                <thead className="bg-[var(--light-sand)]">
+                                    <tr>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Huésped
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Fechas
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Cabaña
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Fuente
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Estado
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Código
+                                        </th>
+                                        <th className="px-6 pb-3 text-left text-xs font-medium text-[var(--brown-earth)] uppercase tracking-wider">
+                                            Total
+                                        </th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-[var(--beige-arena)]">
+                                    {filteredReservations.map((reservation) => {
+                                        const hasConflict = conflicts.some(c =>
+                                            c.reservations.some(r => r.id === reservation.id)
+                                        )
 
-                    {reservations.length === 0 && (
-                        <div className="text-center py-12">
-                            <div className="text-gray-500">No se encontraron reservas</div>
+                                        return (
+                                            <tr
+                                                key={reservation.id}
+                                                className={`hover:bg-[var(--soft-cream)] ${hasConflict ? 'bg-red-50' : ''}`}
+                                            >
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        {hasConflict && (
+                                                            <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                                                        )}
+                                                        <div>
+                                                            <div className="text-sm font-medium text-[var(--brown-earth)]">
+                                                                {reservation.guestName}
+                                                            </div>
+                                                            <div className="text-sm text-[var(--slate-gray)]">
+                                                                {reservation.adults} adultos
+                                                                {reservation.children > 0 && `, ${reservation.children} niños`}
+                                                                {reservation.pets > 0 && `, ${reservation.pets} mascotas`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-[var(--brown-earth)]">
+                                                        {format(reservation.checkIn, 'dd/MM/yyyy', { locale: es })}
+                                                    </div>
+                                                    <div className="text-sm text-[var(--slate-gray)]">
+                                                        hasta {format(reservation.checkOut, 'dd/MM/yyyy', { locale: es })}
+                                                    </div>
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--brown-earth)]">
+                                                    {getCabinDisplayName(reservation.cabinId)}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {getSourceBadge(reservation.source)}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {getStatusBadge(reservation.status)}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--brown-earth)]">
+                                                    {reservation.reservationCode}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--brown-earth)]">
+                                                    {reservation.totalPrice ? `$${reservation.totalPrice.toLocaleString('es-AR')}` : '-'}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
-                </div>
+
+                        {filteredReservations.length === 0 && (
+                            <div className="text-center py-12">
+                                <XCircle className="h-12 w-12 text-[var(--slate-gray)] mx-auto mb-4" />
+                                <div className="text-[var(--slate-gray)]">No se encontraron reservas</div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateICalForCabin } from '@/utils/ical-generator'
 import { StrapiAPI, strapiToLocalReservation } from '@/lib/strapi'
-
-const cabinNames: Record<string, string> = {
-    'refugio-intimo': 'Refugio Íntimo'
-}
+import { getCabinConfig } from '@/utils/cabins'
 
 export async function GET(
     request: NextRequest,
@@ -14,7 +11,8 @@ export async function GET(
         const { id } = await params
 
         // Verificar que la cabaña existe
-        if (!cabinNames[id]) {
+        const cabinConfig = getCabinConfig(id)
+        if (!cabinConfig) {
             return NextResponse.json(
                 { error: 'Cabaña no encontrada' },
                 { status: 404 }
@@ -29,7 +27,7 @@ export async function GET(
 
         // Validar que strapiReservations es un array válido
         if (!Array.isArray(strapiReservations)) {
-            const icalContent = generateICalForCabin([], cabinNames[id])
+            const icalContent = generateICalForCabin([], cabinConfig.name)
             return new NextResponse(icalContent, {
                 status: 200,
                 headers: {
@@ -46,7 +44,7 @@ export async function GET(
         const localReservations = strapiReservations.map(strapiToLocalReservation)
 
         // Generar iCal
-        const icalContent = generateICalForCabin(localReservations, cabinNames[id])
+        const icalContent = generateICalForCabin(localReservations, cabinConfig.name)
 
         // Retornar como archivo .ics
         return new NextResponse(icalContent, {

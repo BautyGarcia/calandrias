@@ -13,18 +13,8 @@ import { CALENDAR_CABINS } from '@/data/cabins-calendar'
 import { Cabin } from '@/data/cabins'
 import { ReservationFormData } from '@/types/reservation'
 import { CreateReservationRequest } from '@/types/api'
+import { getCabinICalUrl } from '@/utils/cabins'
 
-// Configuration for dynamic iCal URLs per cabin
-const CABIN_ICAL_URLS: Record<string, string> = {
-  // Default URL for all cabins for now - can be customized per cabin in the future
-  'refugio-intimo': 'https://www.airbnb.com.ar/calendar/ical/1424652928174532253.ics?s=b96f0ce321866e603b783e255ef7d430',
-  'confort-familiar': 'https://www.airbnb.com.ar/calendar/ical/1424652928174532253.ics?s=b96f0ce321866e603b783e255ef7d430',
-  'experiencia-premium': 'https://www.airbnb.com.ar/calendar/ical/1424652928174532253.ics?s=b96f0ce321866e603b783e255ef7d430',
-  'retiro-exclusivo': 'https://www.airbnb.com.ar/calendar/ical/1424652928174532253.ics?s=b96f0ce321866e603b783e255ef7d430'
-}
-
-// Default URL fallback
-const DEFAULT_ICAL_URL = 'https://www.airbnb.com.ar/calendar/ical/1424652928174532253.ics?s=b96f0ce321866e603b783e255ef7d430'
 
 interface CabinCalendarSectionProps {
   cabin: Cabin
@@ -38,7 +28,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   const [currentStep, setCurrentStep] = useState<'calendar' | 'form'>('calendar')
 
   // Get the appropriate iCal URL for this cabin
-  const icalUrl = CABIN_ICAL_URLS[cabin.slug] || DEFAULT_ICAL_URL
+  const icalUrl = getCabinICalUrl(cabin.slug)
 
   // Helper function to convert price string to number
   const parsePrice = (priceString: string): number => {
@@ -53,16 +43,26 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   // Auto-load calendar data when component mounts
   useEffect(() => {
     if (!isAutoLoaded && !loading && events.length === 0) {
-      loadFromUrl(icalUrl)
-        .then(() => {
+      const loadData = async () => {
+        try {
+          // Always load Strapi reservations
+          await refreshStrapiOnly()
+          
+          // Only load from iCal URL if one is configured
+          if (icalUrl) {
+            await loadFromUrl(icalUrl)
+          }
+          
           setIsAutoLoaded(true)
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Failed to load calendar data:', err)
           setIsAutoLoaded(true) // Still mark as attempted to prevent infinite retries
-        })
+        }
+      }
+      
+      loadData()
     }
-  }, [icalUrl, loadFromUrl, isAutoLoaded, loading, events.length, cabin.slug])
+  }, [icalUrl, loadFromUrl, refreshStrapiOnly, isAutoLoaded, loading, events.length, cabin.slug])
 
   // Get the appropriate calendar cabin config
   const calendarCabin = CALENDAR_CABINS.find(c =>
@@ -112,10 +112,10 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       await refreshStrapiOnly()
     } catch (error) {
       console.error('Error submitting reservation:', error)
-      
+
       // También refrescar reservas de Strapi en caso de error (puede que haya conflictos nuevos)
       await refreshStrapiOnly()
-      
+
       // Re-lanzar el error para que el formulario lo maneje
       throw error
     }
@@ -253,9 +253,9 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     </div>
 
                     {/* Reserve Button */}
-                    <Button 
-                      variant="wood" 
-                      size="lg" 
+                    <Button
+                      variant="wood"
+                      size="lg"
                       className="w-full font-medium"
                       disabled={!selectedRange.from || !selectedRange.to}
                       onClick={handleReserveClick}
@@ -263,7 +263,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       <DollarSign className="h-4 w-4 mr-2" />
                       Continuar con la Reserva
                     </Button>
-                    
+
                     {(!selectedRange.from || !selectedRange.to) && (
                       <p className="text-xs text-[var(--slate-gray)] text-center">
                         Selecciona fechas para activar la reserva

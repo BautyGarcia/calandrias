@@ -84,28 +84,41 @@ export class StrapiAPI {
         return response || []
     }
 
-    // Verificar conflictos de fechas
-    async checkDateConflicts(cabinId: string, checkIn: string, checkOut: string, excludeId?: number): Promise<StrapiReservation[]> {
-        let endpoint = `/reservations?filters[cabinId][$eq]=${cabinId}&filters[status][$ne]=cancelled`
-        
-        // Buscar reservas que se solapan con las fechas dadas
-        endpoint += `&filters[$or][0][checkIn][$lte]=${checkIn}&filters[$or][0][checkOut][$gt]=${checkIn}`
-        endpoint += `&filters[$or][1][checkIn][$lt]=${checkOut}&filters[$or][1][checkOut][$gte]=${checkOut}`
-        endpoint += `&filters[$or][2][checkIn][$gte]=${checkIn}&filters[$or][2][checkOut][$lte]=${checkOut}`
-        
-        if (excludeId) {
-            endpoint += `&filters[id][$ne]=${excludeId}`
+    // Verificar disponibilidad usando el endpoint centralizado
+    async checkDateAvailability(cabinId: string, checkIn: string, checkOut: string): Promise<{
+        isAvailable: boolean
+        conflictingReservations: StrapiReservation[]
+        requestedPeriod: {
+            checkIn: string
+            checkOut: string
+            cabinId: string
         }
-
-        const response = await this.request<StrapiReservation[]>(endpoint)
-        return response || []
+    }> {
+        const response = await this.request<{
+            isAvailable: boolean
+            conflictingReservations: StrapiReservation[]
+            requestedPeriod: {
+                checkIn: string
+                checkOut: string
+                cabinId: string
+            }
+        }>('/reservations/check-date-is-available', {
+            method: 'POST',
+            body: JSON.stringify({
+                checkIn,
+                checkOut,
+                cabinId
+            })
+        })
+        
+        return response
     }
 }
 
 // Función helper para convertir StrapiReservation a formato local
 export function strapiToLocalReservation(strapiReservation: StrapiReservation): LocalReservation {
     return {
-        id: strapiReservation.id.toString(), // Convertir a string para LocalReservation
+        id: strapiReservation.id.toString(),
         cabinId: strapiReservation.cabinId,
         checkIn: new Date(strapiReservation.checkIn),
         checkOut: new Date(strapiReservation.checkOut),

@@ -1,4 +1,5 @@
 import { CalendarDay, CalendarEvent, CalendarMonth, CabinInfo, ReservationDetails } from '@/types/calendar'
+import { LocalReservation } from '@/types/reservation'
 
 // Obtener los días de un mes para el calendario
 export function getCalendarMonth(year: number, month: number): CalendarMonth {
@@ -165,7 +166,9 @@ export function isDateInRange(date: Date, start: Date, end: Date): boolean {
   const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate())
   const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate())
   
-  return checkDate >= startDate && checkDate < endDate
+  // Incluir tanto fecha de inicio como fecha de fin
+  // Para una reserva del 5 al 6, debe bloquear 5 Y 6
+  return checkDate >= startDate && checkDate <= endDate
 }
 
 // Obtener el estado de disponibilidad para una cabaña en una fecha específica
@@ -195,3 +198,55 @@ export const AVAILABILITY_COLORS = {
   blocked: '#f59e0b', // amber-500
   maintenance: '#8b5cf6' // violet-500
 } as const 
+
+// Función helper para crear fechas sin problemas de zona horaria
+function createDateFromString(dateString: string | Date): Date {
+  if (dateString instanceof Date) {
+    return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate())
+  }
+  
+  // Si es un string, parsearlo como fecha local
+  const parts = dateString.split('-')
+  if (parts.length === 3) {
+    const year = parseInt(parts[0])
+    const month = parseInt(parts[1]) - 1 // Los meses en JS son 0-indexed
+    const day = parseInt(parts[2])
+    return new Date(year, month, day)
+  }
+  
+  // Fallback
+  return new Date(dateString)
+}
+
+// Convertir reservas de Strapi a eventos de calendario
+export function convertStrapiReservationsToCalendarEvents(
+  reservations: LocalReservation[]
+): CalendarEvent[] {
+  return reservations
+    .filter(reservation => reservation.status !== 'cancelled') // Excluir canceladas
+    .map(reservation => {
+      // Crear fechas sin problemas de zona horaria
+      const startDate = createDateFromString(reservation.checkIn)
+      const endDate = createDateFromString(reservation.checkOut)
+      
+      return {
+        id: `strapi-${reservation.id}`,
+        title: `${reservation.guestName} - ${reservation.source === 'direct' ? 'Reserva Directa' : reservation.source}`,
+        start: startDate,
+        end: endDate,
+        cabinId: reservation.cabinId,
+        type: 'reservation' as const,
+        details: {
+          guestName: reservation.guestName,
+          reservationCode: reservation.reservationCode || `REF-${reservation.id}`,
+          source: reservation.source,
+          checkIn: reservation.checkIn,
+          checkOut: reservation.checkOut,
+          adults: reservation.adults,
+          children: reservation.children,
+          pets: reservation.pets,
+          specialRequests: reservation.specialRequests
+        }
+      }
+    })
+} 

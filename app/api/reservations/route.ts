@@ -52,25 +52,29 @@ export async function POST(request: NextRequest) {
         // Validar datos requeridos
         if (!body.cabinId || !body.checkIn || !body.checkOut || !body.guestName) {
             return NextResponse.json(
-                { error: 'Faltan campos requeridos: cabinId, checkIn, checkOut, guestName' },
+                { 
+                    success: false,
+                    error: 'Faltan campos requeridos: cabinId, checkIn, checkOut, guestName' 
+                },
                 { status: 400 }
             )
         }
 
         const strapiAPI = new StrapiAPI()
 
-        // Verificar conflictos de fechas
-        const conflicts = await strapiAPI.checkDateConflicts(
+        // Verificar disponibilidad usando el nuevo endpoint centralizado
+        const availabilityCheck = await strapiAPI.checkDateAvailability(
             body.cabinId,
             body.checkIn,
             body.checkOut
         )
 
-        if (conflicts.length > 0) {
+        if (!availabilityCheck.isAvailable) {
             return NextResponse.json(
                 {
+                    success: false,
                     error: 'Fechas no disponibles',
-                    conflictingReservations: conflicts.map(r => ({
+                    conflictingReservations: availabilityCheck.conflictingReservations.map(r => ({
                         id: r.id,
                         checkIn: r.checkIn,
                         checkOut: r.checkOut,
@@ -109,13 +113,17 @@ export async function POST(request: NextRequest) {
         const localReservation = strapiToLocalReservation(strapiReservation)
 
         return NextResponse.json({
-            reservation: localReservation,
-            message: 'Reserva creada exitosamente'
+            success: true,
+            data: {
+                reservation: localReservation,
+                message: 'Reserva creada exitosamente'
+            }
         }, { status: 201 })
 
     } catch (error) {
         return NextResponse.json(
             {
+                success: false,
                 error: 'Error creando reserva',
                 message: error instanceof Error ? error.message : 'Error desconocido'
             },

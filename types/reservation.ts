@@ -1,3 +1,5 @@
+import { PaymentStatus } from './payment'
+
 export interface LocalReservation {
     id: string
     documentId: string
@@ -19,6 +21,15 @@ export interface LocalReservation {
     specialRequests?: string
     createdAt: Date
     updatedAt: Date
+    // Campos de pago
+    paymentId?: string
+    paymentStatus?: PaymentStatus
+    paymentMethod?: string
+    paidAmount?: number
+    depositAmount?: number
+    paymentDate?: Date
+    mpPreferenceId?: string
+    mpPaymentId?: string
 }
 
 export interface ICalEvent {

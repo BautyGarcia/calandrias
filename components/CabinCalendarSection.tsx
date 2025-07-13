@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign, CheckCircle } from "lucide-react"
+import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign } from "lucide-react"
 import CabinAvailabilityCalendar, { DateRange } from '@/components/calendar/CabinAvailabilityCalendar'
 import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'

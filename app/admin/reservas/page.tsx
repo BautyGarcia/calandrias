@@ -18,7 +18,8 @@ import {
     Home,
     Filter,
     Check,
-    X
+    X,
+    LogOut
 } from "lucide-react"
 import { LocalReservation } from '@/types'
 import { getCabinDisplayName } from '@/utils/cabins'
@@ -37,6 +38,21 @@ export default function AdminReservas() {
     const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'cancelled'>('all')
     const [conflicts, setConflicts] = useState<ConflictDetection[]>([])
     const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/admin/auth', {
+                method: 'DELETE'
+            })
+            
+            // Redirigir a login
+            window.location.href = '/admin/login'
+        } catch (error) {
+            console.error('Error during logout:', error)
+            // Forzar redirección aunque falle la llamada al API
+            window.location.href = '/admin/login'
+        }
+    }
 
     const fetchReservations = useCallback(async () => {
         try {
@@ -325,6 +341,14 @@ export default function AdminReservas() {
                                         <RefreshCw className="h-4 w-4 mr-2" />
                                     )}
                                     Sincronizar Airbnb
+                                </Button>
+                                <Button
+                                    onClick={handleLogout}
+                                    variant="outline"
+                                    className="border-[var(--brown-earth)] text-[var(--brown-earth)] hover:bg-[var(--light-sand)]"
+                                >
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    Cerrar Sesión
                                 </Button>
                             </div>
                         </div>

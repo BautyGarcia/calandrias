@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign } from "lucide-react"
+import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign, CheckCircle } from "lucide-react"
 import CabinAvailabilityCalendar, { DateRange } from '@/components/calendar/CabinAvailabilityCalendar'
 import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'
@@ -21,11 +21,23 @@ interface CabinCalendarSectionProps {
 }
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
-  const { events, loading, error, loadFromUrl, refreshStrapiOnly } = useCalendarData({ cabinId: cabin.slug })
+  const { events, loading, error, syncing, loadFromUrl, refreshStrapiOnly } = useCalendarData({ cabinId: cabin.slug })
   const { createReservation, isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
   const [currentStep, setCurrentStep] = useState<'calendar' | 'form'>('calendar')
+  const [syncSuccess, setSyncSuccess] = useState(false)
+
+  // Effect to show sync success indicator
+  useEffect(() => {
+    if (!syncing && syncSuccess) {
+      const timer = setTimeout(() => setSyncSuccess(false), 3000)
+      return () => clearTimeout(timer)
+    }
+    if (syncing) {
+      setSyncSuccess(true)
+    }
+  }, [syncing, syncSuccess])
 
   // Get the appropriate iCal URL for this cabin
   const icalUrl = getCabinICalUrl(cabin.slug)
@@ -159,6 +171,12 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                       <Calendar className="h-5 w-5" />
                       Selecciona tus fechas
+                      {!syncing && syncSuccess && (
+                        <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Sincronizado</span>
+                        </div>
+                      )}
                     </CardTitle>
                   </CardHeader>
 
@@ -168,10 +186,13 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                         <Loader2 className="h-12 w-12 animate-spin text-[var(--green-moss)]" />
                         <div className="text-center space-y-2">
                           <h3 className="text-lg font-medium text-[var(--brown-earth)]">
-                            Cargando calendario
+                            {syncing ? 'Sincronizando con Airbnb' : 'Cargando calendario'}
                           </h3>
                           <p className="text-[var(--slate-gray)]">
-                            Obteniendo la disponibilidad más actualizada...
+                            {syncing 
+                              ? 'Actualizando reservas desde Airbnb...'
+                              : 'Obteniendo la disponibilidad más actualizada...'
+                            }
                           </p>
                         </div>
                       </div>

@@ -16,6 +16,26 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [syncing, setSyncing] = useState(false)
+
+  const syncAirbnb = async () => {
+    try {
+      setSyncing(true)
+      const response = await fetch('/api/cron/sync-airbnb', {
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test-secret'}`
+        }
+      })
+
+      if (!response.ok) {
+        console.warn('Airbnb sync failed, continuing with existing data')
+      }
+    } catch (error) {
+      console.warn('Airbnb sync error, continuing with existing data:', error)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const loadStrapiReservations = async (targetCabinId?: string) => {
     try {
@@ -42,6 +62,11 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     setError(null)
 
     try {
+      // Sincronizar con Airbnb antes de cargar datos
+      if (cabinId) {
+        await syncAirbnb()
+      }
+
       const response = await fetch('/api/parse-ical', {
         method: 'POST',
         headers: {
@@ -96,8 +121,8 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
         throw new Error(result.error || 'Error al procesar el iCal')
       }
 
-      const calendarEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
-      setEvents(calendarEvents)
+      const icalEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
+      setEvents(icalEvents)
       setLastUpdated(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -107,12 +132,18 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
   }
 
   const loadExampleData = async () => {
+    setLoading(true)
+    setError(null)
+
     try {
-      const response = await fetch('/examples/example-airbnb.ics')
-      const content = await response.text()
-      await loadFromContent(content)
+      // Simular carga de datos de ejemplo
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setEvents([])
+      setLastUpdated(new Date())
     } catch (err) {
-      setError('Error al cargar datos de ejemplo')
+      setError(err instanceof Error ? err.message : 'Error desconocido')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -121,9 +152,13 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     setError(null)
 
     try {
+      // Sincronizar con Airbnb antes de refrescar
+      if (cabinId) {
+        await syncAirbnb()
+      }
+
+      // Obtener eventos de iCal si hay URL
       let icalEvents: CalendarEvent[] = []
-      
-      // Cargar eventos de iCal si hay URL
       if (icalUrl) {
         const response = await fetch('/api/parse-ical', {
           method: 'POST',
@@ -142,11 +177,10 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
           icalEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
         }
       }
-      
-      // Siempre cargar reservas de Strapi
+
+      // Obtener eventos de Strapi
       const strapiEvents = await loadStrapiReservations(cabinId)
       
-      // Combinar todos los eventos
       const allEvents = [...icalEvents, ...strapiEvents]
       
       setEvents(allEvents)
@@ -160,6 +194,11 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
 
   const refreshStrapiOnly = async () => {
     try {
+      // Sincronizar con Airbnb antes de refrescar solo Strapi
+      if (cabinId) {
+        await syncAirbnb()
+      }
+
       const strapiEvents = await loadStrapiReservations(cabinId)
       
       // Mantener eventos de iCal existentes y actualizar solo Strapi
@@ -191,11 +230,13 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     loading,
     error,
     lastUpdated,
+    syncing,
     loadFromUrl,
     loadFromContent,
     loadExampleData,
     refreshEvents,
     refreshStrapiOnly,
-    clearData
+    clearData,
+    syncAirbnb
   }
 } 

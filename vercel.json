@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/sync-airbnb",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 } 

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             adults: body.adults || 1,
             children: body.children || 0,
             pets: body.pets || 0,
-            status: 'pending' as const,
+            status: body.status || 'confirmed',
             source: body.source || 'direct',
             externalId: body.externalId,
             reservationCode: body.reservationCode || generateReservationCode(),

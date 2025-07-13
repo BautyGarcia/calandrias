@@ -27,6 +27,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
   const [currentStep, setCurrentStep] = useState<'calendar' | 'form'>('calendar')
   const [syncSuccess, setSyncSuccess] = useState(false)
+  const [calendarReady, setCalendarReady] = useState(false)
 
   // Effect to show sync success indicator
   useEffect(() => {
@@ -38,6 +39,19 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       setSyncSuccess(true)
     }
   }, [syncing, syncSuccess])
+
+  // Effect to mark calendar as ready when events are loaded and not loading
+  useEffect(() => {
+    if (!loading && !syncing && isAutoLoaded && events.length >= 0) {
+      // Add a small delay to ensure calendar has time to render
+      const timer = setTimeout(() => {
+        setCalendarReady(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    } else {
+      setCalendarReady(false)
+    }
+  }, [loading, syncing, isAutoLoaded, events.length])
 
   // Get the appropriate iCal URL for this cabin
   const icalUrl = getCabinICalUrl(cabin.slug)
@@ -171,27 +185,23 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                       <Calendar className="h-5 w-5" />
                       Selecciona tus fechas
-                      {!syncing && syncSuccess && (
-                        <div className="flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                          <CheckCircle className="h-3 w-3" />
-                          <span>Sincronizado</span>
-                        </div>
-                      )}
                     </CardTitle>
                   </CardHeader>
 
                   <CardContent className="p-6">
-                    {loading ? (
+                    {(loading || syncing || !calendarReady) ? (
                       <div className="flex flex-col items-center justify-center py-12 space-y-4">
                         <Loader2 className="h-12 w-12 animate-spin text-[var(--green-moss)]" />
                         <div className="text-center space-y-2">
                           <h3 className="text-lg font-medium text-[var(--brown-earth)]">
-                            {syncing ? 'Sincronizando con Airbnb' : 'Cargando calendario'}
+                            {syncing ? 'Sincronizando reservas' : 'Cargando calendario'}
                           </h3>
                           <p className="text-[var(--slate-gray)]">
                             {syncing 
-                              ? 'Actualizando reservas desde Airbnb...'
-                              : 'Obteniendo la disponibilidad más actualizada...'
+                              ? 'Actualizando reservas...'
+                              : !calendarReady 
+                                ? 'Preparando calendario con fechas actualizadas...'
+                                : 'Obteniendo la disponibilidad más actualizada...'
                             }
                           </p>
                         </div>

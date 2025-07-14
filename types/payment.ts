@@ -39,6 +39,7 @@ export interface ReservationPaymentData {
   cabinName: string;
   guestName: string;
   guestEmail: string;
+  guestPhone?: string;
   checkIn: string;
   checkOut: string;
   adults: number;

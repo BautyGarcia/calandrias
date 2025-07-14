@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paymentApi } from '@/lib/mercadopago';
 import { StrapiAPI } from '@/lib/strapi';
+import { WebhookValidator } from '@/lib/webhook-validator';
+import { getRawBody, getSignatureHeader } from '@/lib/webhook-utils';
 import type { PaymentNotification } from '@/types/payment';
 
 export async function POST(request: NextRequest) {
     try {
-        // Leer el cuerpo de la notificación
-        const notification: PaymentNotification = await request.json();
+        // 1. Obtener raw body para validación de signature
+        const rawBody = await getRawBody(request);
+        
+        // 2. Validar signature del webhook (solo en producción)
+        if (process.env.NODE_ENV === 'production') {
+            const signatureHeader = getSignatureHeader(request);
+            
+            if (!signatureHeader) {
+                return NextResponse.json({ error: 'Missing signature header' }, { status: 401 });
+            }
+            
+            const signature = WebhookValidator.extractSignatureFromHeader(signatureHeader);
+            if (!signature || !WebhookValidator.validateSignature(signature, rawBody)) {
+                return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+            }
+        }
+        
+        // 3. Parsear la notificación
+        const notification: PaymentNotification = JSON.parse(rawBody);
 
         // Validar que sea una notificación de pago
         if (notification.type !== 'payment') {
@@ -19,17 +38,7 @@ export async function POST(request: NextRequest) {
 
         // Obtener datos de la reserva desde metadata
         const metadata = paymentData.metadata;
-        console.log('📋 Metadata received:', metadata);
-        
-        // Agregar debug para verificar campos
-        console.log('❌ Missing fields:', {
-            hasMetadata: !!metadata,
-            hasCabinId: !!metadata?.cabin_id,
-            hasGuestName: !!metadata?.guest_name,
-            hasGuestEmail: !!metadata?.guest_email
-        });
-        
-        if (!metadata || !metadata.cabin_id || !metadata.guest_name || !metadata.guest_email) {
+        if (!metadata || !metadata.cabinId || !metadata.guestName || !metadata.guestEmail) {
             console.error('❌ Required reservation data not found in payment metadata');
             return NextResponse.json({ error: 'Invalid payment metadata' }, { status: 400 });
         }

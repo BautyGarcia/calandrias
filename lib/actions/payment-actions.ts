@@ -113,35 +113,33 @@ export async function processReservationPaymentDirect(
     paymentData: ReservationPaymentData
 ): Promise<never> {
     try {
-        // Crear reserva temporal en Strapi con estado 'pending'
-        const reservationData = {
-            cabinId: paymentData.cabinId,
-            checkIn: paymentData.checkIn,
-            checkOut: paymentData.checkOut,
-            guestName: paymentData.guestName,
-            guestEmail: paymentData.guestEmail,
-            guestPhone: '', // No requerido para el pago
-            adults: paymentData.adults,
-            children: paymentData.children,
-            pets: paymentData.pets,
-            specialRequests: paymentData.specialRequests,
-            totalPrice: paymentData.totalAmount,
-            currency: 'ARS',
-            status: 'pending' as const,
-            source: 'direct' as const,
-        };
-
+        // Validar disponibilidad antes de crear preferencia
+        // Esto evita que se procese pago para fechas ya ocupadas
         const strapiApi = new StrapiAPI();
-        const reservation = await strapiApi.createReservation(reservationData);
+        const existingReservations = await strapiApi.getReservations();
+        
+        const checkInDate = new Date(paymentData.checkIn);
+        const checkOutDate = new Date(paymentData.checkOut);
+        
+        // Verificar conflictos con reservas existentes para la misma cabaña
+        const conflicts = existingReservations.filter(reservation => {
+            if (reservation.cabinId !== paymentData.cabinId) return false;
+            if (reservation.status === 'cancelled') return false;
+            
+            const resCheckIn = new Date(reservation.checkIn);
+            const resCheckOut = new Date(reservation.checkOut);
+            
+            // Verificar solapamiento de fechas
+            return (checkInDate < resCheckOut && checkOutDate > resCheckIn);
+        });
 
-        // Agregar el ID de reserva a los datos de pago
-        const paymentDataWithReservation: ReservationPaymentData = {
-            ...paymentData,
-            reservationId: reservation.documentId,
-        };
+        if (conflicts.length > 0) {
+            throw new Error('Las fechas seleccionadas ya no están disponibles. Por favor, selecciona otras fechas.');
+        }
 
-        // Crear preferencia en MercadoPago y redirigir
-        const checkoutUrl = await paymentApi.createReservationPreference(paymentDataWithReservation);
+        // Crear preferencia con todos los datos en metadata (no crear reserva aún)
+        // La reserva se creará en el webhook cuando el pago sea confirmado
+        const checkoutUrl = await paymentApi.createReservationPreference(paymentData);
         redirect(checkoutUrl);
 
     } catch (error) {
@@ -151,7 +149,7 @@ export async function processReservationPaymentDirect(
         }
         
         console.error('Error processing direct reservation payment:', error);
-        redirect('/reserva-fallida?error=direct_processing_error');
+        redirect('/reserva-fallida?error=availability_check_failed');
     }
 }
 

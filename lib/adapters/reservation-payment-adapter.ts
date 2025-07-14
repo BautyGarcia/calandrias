@@ -27,6 +27,7 @@ export class ReservationPaymentAdapter {
             // Datos del huésped (del formulario)
             guestName: formData.guestName,
             guestEmail: formData.guestEmail,
+            guestPhone: formData.guestPhone || '', // Agregar teléfono para webhook
             
             // Fechas (del contexto)
             checkIn: reservationContext.checkIn.toISOString().split('T')[0],

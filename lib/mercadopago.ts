@@ -12,8 +12,6 @@ if (!accessToken) {
     throw new Error('MP_ACCESS_TOKEN is not configured in environment variables');
 }
 
-
-
 const mercadopago = new MercadoPagoConfig({
     accessToken: accessToken,
     options: {
@@ -48,8 +46,9 @@ export const paymentApi = {
                 failure: `${baseUrl}/reserva-fallida`,
                 pending: `${baseUrl}/reserva-pendiente`,
             },
+            auto_return: 'approved',
             payment_methods: {
-                installments: 12, // Hasta 12 cuotas
+                installments: 1, // Sin cuotas
                 excluded_payment_types: [],
                 excluded_payment_methods: [],
             },
@@ -60,66 +59,59 @@ export const paymentApi = {
                 reservationId: reservationData.reservationId,
                 cabinId: reservationData.cabinId,
                 cabinName: reservationData.cabinName,
-                guestName: reservationData.guestName,
-                guestEmail: reservationData.guestEmail,
                 checkIn: reservationData.checkIn,
                 checkOut: reservationData.checkOut,
-                adults: reservationData.adults,
-                children: reservationData.children,
-                pets: reservationData.pets,
-                totalAmount: reservationData.totalAmount,
-                specialRequests: reservationData.specialRequests,
+                adults: reservationData.adults.toString(),
+                children: reservationData.children.toString(),
+                pets: reservationData.pets.toString(),
+                guestName: reservationData.guestName,
+                guestEmail: reservationData.guestEmail,
+                guestPhone: reservationData.guestPhone || '',
+                specialRequests: reservationData.specialRequests || '',
+                totalAmount: reservationData.totalAmount.toString(),
             },
         };
 
-        try {
-            const result = await preference.create({ body: preferenceBody });
-            return result.init_point!;
-        } catch (error) {
-            console.error('Error creating MercadoPago preference:', error);
-            throw new Error('No se pudo crear la preferencia de pago');
+        const result = await preference.create({ body: preferenceBody });
+        
+        if (!result.init_point) {
+            throw new Error('Failed to create payment preference');
         }
+
+        return result.init_point;
     },
 
-    // Obtener información de un pago
+    // Obtener información de pago
     async getPayment(paymentId: string): Promise<PaymentData> {
         const payment = new Payment(mercadopago);
-
-        try {
-            const result = await payment.get({ id: paymentId });
-            // Convertir el resultado del SDK al formato que necesitamos
-            return {
-                id: String(result.id),
-                status: result.status as PaymentStatus,
-                status_detail: result.status_detail || '',
-                external_reference: result.external_reference || undefined,
-                payment_method_id: result.payment_method_id || '',
-                payment_type_id: result.payment_type_id || '',
-                transaction_amount: result.transaction_amount || 0,
-                transaction_amount_refunded: result.transaction_amount_refunded || 0,
-                date_created: result.date_created || '',
-                date_approved: result.date_approved || undefined,
-                metadata: result.metadata || {},
-                payer: {
-                    email: result.payer?.email || '',
-                    identification: {
-                        type: result.payer?.identification?.type || '',
-                        number: result.payer?.identification?.number || '',
-                    },
+        const result = await payment.get({ id: paymentId });
+        
+        return {
+            id: String(result.id || ''),
+            status: result.status as PaymentStatus,
+            status_detail: result.status_detail || '',
+            external_reference: result.external_reference,
+            metadata: result.metadata,
+            transaction_amount: result.transaction_amount || 0,
+            transaction_amount_refunded: result.transaction_amount_refunded || 0,
+            payment_method_id: result.payment_method_id || '',
+            payment_type_id: result.payment_type_id || '',
+            payer: {
+                email: result.payer?.email || '',
+                identification: {
+                    type: result.payer?.identification?.type || '',
+                    number: result.payer?.identification?.number || '',
                 },
-            } as PaymentData;
-        } catch (error) {
-            console.error('Error getting payment:', error);
-            throw new Error('No se pudo obtener la información del pago');
-        }
+            },
+            date_approved: result.date_approved || undefined,
+            date_created: result.date_created || '',
+        };
     },
 
     // Validar webhook signature (para seguridad)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    validateWebhookSignature(_signature: string, _data: string): boolean {
-        // Implementar validación de firma webhook si es necesario
-        // Por ahora devolvemos true, pero en producción deberíamos validar
-        return true;
+    validateWebhookSignature(signature: string, data: string): boolean {
+        const { WebhookValidator } = require('@/lib/webhook-validator');
+        return WebhookValidator.validateSignature(signature, data);
     }
 };
 

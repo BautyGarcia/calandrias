@@ -364,7 +364,7 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
                             {(isLoading || isSubmitting) ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Procesando reserva...
+                                    Redirigiendo a pago...
                                 </>
                             ) : submissionStatus === 'success' ? (
                                 <>
@@ -374,7 +374,7 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
                             ) : submissionStatus === 'error' && conflictError ? (
                                 'Selecciona otras fechas'
                             ) : (
-                                'Confirmar Reserva'
+                                'Reservar y Pagar'
                             )}
                         </Button>
                     </div>

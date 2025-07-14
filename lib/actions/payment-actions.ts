@@ -106,6 +106,56 @@ export async function processReservationPayment(formData: FormData): Promise<nev
 }
 
 /**
+ * Server Action: Procesar pago desde datos directos (para formulario de reservas)
+ * Siguiendo SRP: solo se encarga de procesar pagos con datos ya preparados
+ */
+export async function processReservationPaymentDirect(
+    paymentData: ReservationPaymentData
+): Promise<never> {
+    try {
+        // Crear reserva temporal en Strapi con estado 'pending'
+        const reservationData = {
+            cabinId: paymentData.cabinId,
+            checkIn: paymentData.checkIn,
+            checkOut: paymentData.checkOut,
+            guestName: paymentData.guestName,
+            guestEmail: paymentData.guestEmail,
+            guestPhone: '', // No requerido para el pago
+            adults: paymentData.adults,
+            children: paymentData.children,
+            pets: paymentData.pets,
+            specialRequests: paymentData.specialRequests,
+            totalPrice: paymentData.totalAmount,
+            currency: 'ARS',
+            status: 'pending' as const,
+            source: 'direct' as const,
+        };
+
+        const strapiApi = new StrapiAPI();
+        const reservation = await strapiApi.createReservation(reservationData);
+
+        // Agregar el ID de reserva a los datos de pago
+        const paymentDataWithReservation: ReservationPaymentData = {
+            ...paymentData,
+            reservationId: reservation.documentId,
+        };
+
+        // Crear preferencia en MercadoPago y redirigir
+        const checkoutUrl = await paymentApi.createReservationPreference(paymentDataWithReservation);
+        redirect(checkoutUrl);
+
+    } catch (error) {
+        // Si es un error de redirect de Next.js, re-lanzarlo
+        if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+            throw error;
+        }
+        
+        console.error('Error processing direct reservation payment:', error);
+        redirect('/reserva-fallida?error=direct_processing_error');
+    }
+}
+
+/**
  * Server Action: Procesar pago rápido (para testing)
  * Versión simplificada para pruebas de desarrollo
  */

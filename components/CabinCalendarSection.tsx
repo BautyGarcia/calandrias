@@ -12,7 +12,8 @@ import { useReservations } from '@/hooks/useReservations'
 import { CALENDAR_CABINS } from '@/data/cabins-calendar'
 import { Cabin } from '@/data/cabins'
 import { ReservationFormData } from '@/types/reservation'
-import { CreateReservationRequest } from '@/types/api'
+import { ReservationPaymentAdapter } from '@/lib/adapters/reservation-payment-adapter'
+import { processReservationPaymentDirect } from '@/lib/actions/payment-actions'
 import { getCabinICalUrl } from '@/utils/cabins'
 
 
@@ -22,7 +23,7 @@ interface CabinCalendarSectionProps {
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
   const { events, loading, error, syncing, loadFromUrl, refreshStrapiOnly } = useCalendarData({ cabinId: cabin.slug })
-  const { createReservation, isLoading: isSubmittingReservation } = useReservations()
+  const { isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
   const [currentStep, setCurrentStep] = useState<'calendar' | 'form'>('calendar')
@@ -108,42 +109,48 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   const totalPrice = basePrice + cleaningFee + serviceFee
 
   // Handle reservation form submission
+  // Siguiendo SRP: solo orchestración, delegando responsabilidades al adaptador
   const handleReservationSubmit = async (formData: ReservationFormData): Promise<void> => {
     if (!selectedRange.from || !selectedRange.to) {
       throw new Error('Fechas no seleccionadas')
     }
 
     try {
-      const reservationRequest: CreateReservationRequest = {
-        cabinId: cabin.slug,
-        checkIn: selectedRange.from.toISOString().split('T')[0],
-        checkOut: selectedRange.to.toISOString().split('T')[0],
-        guestName: formData.guestName,
-        guestEmail: formData.guestEmail,
-        guestPhone: formData.guestPhone,
-        adults: formData.adults,
-        children: formData.children,
-        pets: formData.pets,
-        specialRequests: formData.specialRequests,
-        totalPrice: totalPrice,
-        currency: 'ARS',
-        status: 'pending',
-        source: 'direct'
+      // Validar datos antes del procesamiento (principio de fail-fast)
+      const validationErrors = ReservationPaymentAdapter.validateFormDataForPayment(formData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(', '));
       }
 
-      await createReservation(reservationRequest)
+      // Usar adaptador para convertir datos (DIP: depender de abstracción)
+      const reservationContext = {
+        cabinId: cabin.slug,
+        cabinName: cabin.name,
+        checkIn: selectedRange.from,
+        checkOut: selectedRange.to,
+        totalPrice: totalPrice
+      };
 
-      // Limpiar fechas seleccionadas y refrescar solo reservas de Strapi (más eficiente)
-      setSelectedRange({ from: null, to: null })
-      await refreshStrapiOnly()
+      const paymentData = ReservationPaymentAdapter.formDataToPaymentData(
+        formData, 
+        reservationContext
+      );
+
+      // Delegar a Server Action que maneja el flujo de pago
+      // Esta llamada redirigirá automáticamente a MercadoPago
+      await processReservationPaymentDirect(paymentData);
+      
+      // Nota: El resto del flujo (limpiar fechas, refrescar) se maneja en las páginas de resultado
+      // ya que el usuario será redirigido a MercadoPago y luego a las páginas de confirmación
+      
     } catch (error) {
-      console.error('Error submitting reservation:', error)
-
-      // También refrescar reservas de Strapi en caso de error (puede que haya conflictos nuevos)
-      await refreshStrapiOnly()
-
+      console.error('Error submitting reservation for payment:', error);
+      
+      // Refrescar en caso de error para mostrar conflictos actualizados
+      await refreshStrapiOnly();
+      
       // Re-lanzar el error para que el formulario lo maneje
-      throw error
+      throw error;
     }
   }
 

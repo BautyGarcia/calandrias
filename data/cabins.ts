@@ -26,7 +26,7 @@ export const cabinsData: Cabin[] = [
         name: "Cabaña 1",
         subtitle: "Refugio Íntimo",
         description: "Perfecta para parejas que buscan una escapada romántica en medio de la naturaleza.",
-        price: "12,000",
+        price: "100",
         capacity: "2 huéspedes",
         bedrooms: "1 dormitorio",
         bathrooms: "1 baño",

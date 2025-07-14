@@ -1,15 +1,15 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { XCircle, ArrowLeft, RefreshCw, Phone } from 'lucide-react';
+import { XCircle, ArrowLeft, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function ReservationFailedContent() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-2xl">
+        <div className="min-h-screen bg-[var(--light-sand)] flex items-center justify-center p-4">
+            <Card className="w-full max-w-2xl bg-[var(--light-sand)] border-2 border-[var(--beige-arena)]">
                 <CardHeader className="text-center">
-                    <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 border-2 border-[var(--beige-arena)]">
                         <XCircle className="w-12 h-12 text-red-600" />
                     </div>
                     <CardTitle className="text-3xl font-bold text-red-600">
@@ -21,11 +21,8 @@ function ReservationFailedContent() {
                 </CardHeader>
 
                 <CardContent className="space-y-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <h3 className="font-semibold text-red-800 mb-2">
-                            ❌ El pago no se pudo procesar
-                        </h3>
-                        <p className="text-red-700">
+                    <div className="text-center">
+                        <p className="text-lg text-[var(--slate-gray)]">
                             Tu reserva no ha sido confirmada porque el pago no se completó exitosamente.
                             Esto puede suceder por varios motivos y no se ha realizado ningún cargo.
                         </p>
@@ -33,7 +30,7 @@ function ReservationFailedContent() {
 
                     <div className="border-t pt-6">
                         <h4 className="font-semibold mb-4">
-                            🔍 Posibles causas
+                            Posibles causas
                         </h4>
                         <ul className="space-y-2 text-gray-600 list-disc list-inside">
                             <li>Datos de tarjeta incorrectos o tarjeta vencida</li>
@@ -45,36 +42,14 @@ function ReservationFailedContent() {
                     </div>
 
                     <div className="border-t pt-6">
-                        <h4 className="font-semibold mb-4">
-                            💡 ¿Qué puedes hacer?
+                        <h4 className="font-semibold mb-4 flex items-center">
+                            <Phone className="w-5 h-5 mr-2" />
+                            ¿Necesitas ayuda?
                         </h4>
-                        <div className="space-y-4">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h5 className="font-medium text-blue-800 mb-2">Intentar nuevamente</h5>
-                                <p className="text-blue-700 text-sm mb-3">
-                                    Puedes volver a intentar el proceso de reserva. Asegúrate de verificar
-                                    los datos de tu tarjeta antes de continuar.
-                                </p>
-                                <Button asChild className="w-full">
-                                    <Link href="/cabanas">
-                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                        Intentar de nuevo
-                                    </Link>
-                                </Button>
-                            </div>
-
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <h5 className="font-medium text-yellow-800 mb-2">Contactar soporte</h5>
-                                <p className="text-yellow-700 text-sm mb-3">
-                                    Si el problema persiste, nuestro equipo puede ayudarte a completar
-                                    tu reserva por otros medios.
-                                </p>
-                                <Button variant="outline" className="w-full">
-                                    <Phone className="w-4 h-4 mr-2" />
-                                    Contactar por WhatsApp
-                                </Button>
-                            </div>
-                        </div>
+                        <p className="text-gray-600 mb-4">
+                            Si continúas teniendo problemas, puedes intentar con otro método de pago
+                            o contactarnos para asistencia personalizada.
+                        </p>
                     </div>
 
                     <div className="border-t pt-6 flex flex-col sm:flex-row gap-4">

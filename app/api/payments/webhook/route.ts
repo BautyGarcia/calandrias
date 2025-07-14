@@ -17,75 +17,123 @@ export async function POST(request: NextRequest) {
         const paymentId = notification.data.id;
         const paymentData = await paymentApi.getPayment(paymentId);
 
-        // Extraer el ID de la reserva desde metadata o external_reference
-        const reservationId = paymentData.metadata?.reservationId || paymentData.external_reference;
-
-        if (!reservationId) {
-            console.error('❌ No reservation ID found in payment metadata');
-            return NextResponse.json({ error: 'No reservation ID found' }, { status: 400 });
+        // Obtener datos de la reserva desde metadata
+        const metadata = paymentData.metadata;
+        console.log('📋 Metadata received:', metadata);
+        
+        // Agregar debug para verificar campos
+        console.log('❌ Missing fields:', {
+            hasMetadata: !!metadata,
+            hasCabinId: !!metadata?.cabin_id,
+            hasGuestName: !!metadata?.guest_name,
+            hasGuestEmail: !!metadata?.guest_email
+        });
+        
+        if (!metadata || !metadata.cabin_id || !metadata.guest_name || !metadata.guest_email) {
+            console.error('❌ Required reservation data not found in payment metadata');
+            return NextResponse.json({ error: 'Invalid payment metadata' }, { status: 400 });
         }
 
-        // Actualizar estado de la reserva en Strapi
+        // Procesar según el estado del pago
         const strapiApi = new StrapiAPI();
+        let result: {
+            status: string;
+            reservationId?: string;
+            paymentStatus?: string;
+            amount?: number;
+            paymentId?: string;
+            message?: string;
+            conflictingReservations?: string[];
+        } = { status: 'processing' };
 
-        let reservationStatus: 'confirmed' | 'pending' | 'cancelled';
-        const paymentStatus = paymentData.status;
-
-        // Mapear estados de MercadoPago a estados de reserva
         switch (paymentData.status) {
             case 'approved':
-                reservationStatus = 'confirmed';
+                // Crear reserva confirmada cuando el pago es aprobado
+                const reservationData = {
+                    cabinId: metadata.cabin_id,
+                    checkIn: metadata.check_in,
+                    checkOut: metadata.check_out,
+                    guestName: metadata.guest_name,
+                    guestEmail: metadata.guest_email,
+                    guestPhone: metadata.guest_phone || '',
+                    adults: parseInt(metadata.adults) || 1,
+                    children: parseInt(metadata.children) || 0,
+                    pets: parseInt(metadata.pets) || 0,
+                    specialRequests: metadata.special_requests || '',
+                    totalPrice: paymentData.transaction_amount,
+                    currency: 'ARS',
+                    status: 'confirmed' as const,
+                    source: 'direct' as const,
+                    // Datos del pago
+                    paymentStatus: 'approved' as const,
+                    mpPaymentId: paymentData.id,
+                    paymentMethod: paymentData.payment_method_id,
+                    paidAmount: paymentData.transaction_amount,
+                    paymentDate: paymentData.date_approved || new Date().toISOString(),
+                };
+
+                // Verificar disponibilidad nuevamente antes de crear
+                const existingReservations = await strapiApi.getReservations();
+                const checkInDate = new Date(metadata.check_in);
+                const checkOutDate = new Date(metadata.check_out);
+                
+                const conflicts = existingReservations.filter(reservation => {
+                    if (reservation.cabinId !== metadata.cabin_id) return false;
+                    if (reservation.status === 'cancelled') return false;
+                    
+                    const resCheckIn = new Date(reservation.checkIn);
+                    const resCheckOut = new Date(reservation.checkOut);
+                    
+                    return (checkInDate < resCheckOut && checkOutDate > resCheckIn);
+                });
+
+                if (conflicts.length > 0) {
+                    console.error('❌ Date conflict detected during payment confirmation');
+                    // En caso de conflicto, registrar el error pero no fallar el webhook
+                    // MercadoPago ya procesó el pago, necesitamos manejarlo
+                    result = {
+                        status: 'conflict_detected',
+                        message: 'Payment approved but dates no longer available',
+                        paymentId: paymentData.id,
+                        conflictingReservations: conflicts.map(c => c.id.toString())
+                    };
+                } else {
+                    // Crear la reserva
+                    const createdReservation = await strapiApi.createReservation(reservationData);
+                    
+                    result = {
+                        status: 'reservation_created',
+                        reservationId: createdReservation.documentId,
+                        paymentStatus: 'approved',
+                        amount: paymentData.transaction_amount
+                    };
+                }
                 break;
+
             case 'rejected':
             case 'cancelled':
-                reservationStatus = 'cancelled';
+                // No crear reserva para pagos rechazados
+                result = {
+                    status: 'payment_rejected',
+                    paymentStatus: paymentData.status,
+                    message: 'No reservation created due to payment failure'
+                };
                 break;
+
             case 'pending':
             case 'in_process':
             case 'processing':
             default:
-                reservationStatus = 'pending';
+                // Para pagos pendientes, no crear reserva aún
+                result = {
+                    status: 'payment_pending',
+                    paymentStatus: paymentData.status,
+                    message: 'Reservation will be created when payment is confirmed'
+                };
                 break;
         }
 
-        // Preparar datos de actualización
-        const updateData = {
-            status: reservationStatus,
-            paymentStatus: paymentStatus,
-            mpPaymentId: paymentData.id,
-            paymentMethod: paymentData.payment_method_id,
-            paidAmount: paymentData.transaction_amount,
-            paymentDate: paymentData.date_approved || new Date().toISOString(),
-        };
-
-        // Buscar la reserva por documentId
-        const reservations = await strapiApi.getReservations();
-        const reservation = reservations.find(r => r.documentId === reservationId);
-
-        if (!reservation) {
-            console.error(`❌ Reservation not found: ${reservationId}`);
-            return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
-        }
-
-        // Actualizar la reserva
-        await strapiApi.updateReservation(reservation.id, updateData);
-        console.log(`✅ Reservation ${reservationId} updated successfully`);
-
-        // Log adicional para debugging
-        console.log('📊 Update summary:', {
-            reservationId,
-            oldStatus: reservation.status,
-            newStatus: reservationStatus,
-            paymentStatus,
-            amount: paymentData.transaction_amount
-        });
-
-        return NextResponse.json({
-            status: 'success',
-            reservationId,
-            paymentStatus,
-            reservationStatus
-        }, { status: 200 });
+        return NextResponse.json(result, { status: 200 });
 
     } catch (error) {
         console.error('❌ Error processing webhook:', error);

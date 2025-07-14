@@ -53,10 +53,7 @@ export const paymentApi = {
                 excluded_payment_types: [],
                 excluded_payment_methods: [],
             },
-            // notification_url: `${baseUrl}/api/payments/webhook`, // Comentado para desarrollo
-            ...(process.env.NODE_ENV === 'production' && { 
-                notification_url: `${baseUrl}/api/payments/webhook` 
-            }),
+            notification_url: `${baseUrl}/api/payments/webhook`,
             external_reference: reservationData.reservationId || `temp-${Date.now()}`,
             metadata: {
                 // Toda la información de la reserva en metadata

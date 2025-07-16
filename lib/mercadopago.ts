@@ -5,6 +5,7 @@ import type {
     PaymentData,
     PaymentStatus
 } from '@/types/payment';
+import { createHmac } from 'crypto';
 
 // Configuración de MercadoPago
 const accessToken = process.env.MP_ACCESS_TOKEN;
@@ -19,6 +20,63 @@ const mercadopago = new MercadoPagoConfig({
         idempotencyKey: 'any_idempotency_key',
     }
 });
+
+// Interfaz para datos de validación de webhook
+interface WebhookValidationData {
+    dataId: string;
+    requestId: string;
+    ts: string;
+    hash: string;
+}
+
+// Función para extraer datos de la firma del webhook
+function extractSignatureData(xSignature: string): WebhookValidationData | null {
+    try {
+        const parts = xSignature.split(',');
+        let ts: string | null = null;
+        let hash: string | null = null;
+
+        // Extraer ts y v1 de la firma
+        for (const part of parts) {
+            const [key, value] = part.split('=', 2);
+            if (key && value) {
+                const trimmedKey = key.trim();
+                const trimmedValue = value.trim();
+                if (trimmedKey === 'ts') {
+                    ts = trimmedValue;
+                } else if (trimmedKey === 'v1') {
+                    hash = trimmedValue;
+                }
+            }
+        }
+
+        if (!ts || !hash) {
+            return null;
+        }
+
+        return { dataId: '', requestId: '', ts, hash };
+    } catch (error) {
+        console.error('Error extracting signature data:', error);
+        return null;
+    }
+}
+
+// Función para validar timestamp
+function validateTimestamp(ts: string): boolean {
+    try {
+        const notificationTime = parseInt(ts) * 1000; // Convertir a milisegundos
+        const currentTime = Date.now();
+        const tolerance = 30 * 60 * 1000; // 30 minutos de tolerancia
+        
+        const timeDiff = Math.abs(currentTime - notificationTime);
+        const isValid = timeDiff <= tolerance;
+        
+        return isValid;
+    } catch (error) {
+        console.error('Error validating timestamp:', error);
+        return false;
+    }
+}
 
 export const paymentApi = {
     // Crear preferencia de pago para reserva
@@ -108,10 +166,59 @@ export const paymentApi = {
         };
     },
 
-    // Validar webhook signature (para seguridad)
-    validateWebhookSignature(signature: string, data: string): boolean {
-        const { WebhookValidator } = require('@/lib/webhook-validator');
-        return WebhookValidator.validateSignature(signature, data);
+    // Validar webhook signature según documentación de MercadoPago
+    validateWebhookSignature(
+        xSignature: string,
+        xRequestId: string,
+        dataId: string
+    ): boolean {
+        try {
+            const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+            if (!webhookSecret) {
+                console.error('❌ MP_WEBHOOK_SECRET not configured');
+                return false;
+            }
+
+            // Extraer timestamp y hash de la firma
+            const signatureData = extractSignatureData(xSignature);
+            if (!signatureData) {
+                console.error('❌ Invalid signature format');
+                return false;
+            }
+
+            // Validar timestamp
+            if (!validateTimestamp(signatureData.ts)) {
+                console.error('❌ Timestamp validation failed - request too old or invalid');
+                // En desarrollo, continuar aunque falle el timestamp
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('⚠️ Development mode: continuing despite timestamp failure');
+                } else {
+                    return false;
+                }
+            }
+
+            // Crear el template según documentación MP
+            // Template: id:[data.id];request-id:[x-request-id];ts:[ts];
+            const manifest = `id:${dataId};request-id:${xRequestId};ts:${signatureData.ts};`;
+
+            // Calcular HMAC-SHA256
+            const hmac = createHmac('sha256', webhookSecret);
+            hmac.update(manifest);
+            const calculatedHash = hmac.digest('hex');
+
+            // Comparar hashes
+            const isValid = calculatedHash === signatureData.hash;
+
+            if (!isValid) {
+                console.error('❌ Webhook signature validation failed');
+            }
+
+            return isValid;
+
+        } catch (error) {
+            console.error('❌ Error validating webhook signature:', error);
+            return false;
+        }
     }
 };
 

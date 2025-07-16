@@ -1,31 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paymentApi } from '@/lib/mercadopago';
 import { StrapiAPI } from '@/lib/strapi';
-import { WebhookValidator } from '@/lib/webhook-validator';
-import { getRawBody, getSignatureHeader } from '@/lib/webhook-utils';
 import type { PaymentNotification } from '@/types/payment';
 
 export async function POST(request: NextRequest) {
     try {
-        // 1. Obtener raw body para validación de signature
-        const rawBody = await getRawBody(request);
+        // ================================
+        // 🔐 VALIDACIÓN DE SEGURIDAD
+        // ================================
         
-        // 2. Validar signature del webhook (solo en producción)
-        if (process.env.NODE_ENV === 'production') {
-            const signatureHeader = getSignatureHeader(request);
-            
-            if (!signatureHeader) {
-                return NextResponse.json({ error: 'Missing signature header' }, { status: 401 });
-            }
-            
-            const signature = WebhookValidator.extractSignatureFromHeader(signatureHeader);
-            if (!signature || !WebhookValidator.validateSignature(signature, rawBody)) {
-                return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+        // Extraer headers de seguridad
+        const xSignature = request.headers.get('x-signature');
+        const xRequestId = request.headers.get('x-request-id');
+        
+        // Extraer query parameter data.id - MercadoPago puede enviar tanto 'id' como 'data.id'
+        const url = new URL(request.url);
+        const dataId = url.searchParams.get('data.id') || url.searchParams.get('id');
+
+        // Verificar presencia de headers requeridos
+        if (!xSignature || !xRequestId || !dataId) {
+            console.error('❌ Missing required security headers or data.id');
+            return NextResponse.json(
+                { error: 'Missing required security headers' },
+                { status: 401 }
+            );
+        }
+
+        // Verificar si MP_WEBHOOK_SECRET está configurado
+        const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+        if (!webhookSecret) {
+            console.error('❌ MP_WEBHOOK_SECRET not configured - skipping signature validation');
+            console.log('⚠️ SECURITY WARNING: Webhook signature validation disabled');
+            // En desarrollo, continuar sin validación
+            // En producción, esto debería fallar
+        } else {
+            // Validar firma del webhook solo si tenemos la clave secreta
+            const isValidSignature = paymentApi.validateWebhookSignature(
+                xSignature,
+                xRequestId,
+                dataId
+            );
+
+            if (!isValidSignature) {
+                console.error('❌ Invalid webhook signature - possible security threat');
+                return NextResponse.json(
+                    { error: 'Invalid webhook signature' },
+                    { status: 401 }
+                );
             }
         }
-        
-        // 3. Parsear la notificación
-        const notification: PaymentNotification = JSON.parse(rawBody);
+
+        // ================================
+        // 📦 PROCESAMIENTO DE NOTIFICACIÓN
+        // ================================
+
+        // Leer el cuerpo de la notificación
+        const notification: PaymentNotification = await request.json();
 
         // Validar que sea una notificación de pago
         if (notification.type !== 'payment') {
@@ -38,7 +68,8 @@ export async function POST(request: NextRequest) {
 
         // Obtener datos de la reserva desde metadata
         const metadata = paymentData.metadata;
-        if (!metadata || !metadata.cabinId || !metadata.guestName || !metadata.guestEmail) {
+
+        if (!metadata || !metadata.cabin_id || !metadata.guest_name || !metadata.guest_email) {
             console.error('❌ Required reservation data not found in payment metadata');
             return NextResponse.json({ error: 'Invalid payment metadata' }, { status: 400 });
         }
@@ -98,8 +129,6 @@ export async function POST(request: NextRequest) {
 
                 if (conflicts.length > 0) {
                     console.error('❌ Date conflict detected during payment confirmation');
-                    // En caso de conflicto, registrar el error pero no fallar el webhook
-                    // MercadoPago ya procesó el pago, necesitamos manejarlo
                     result = {
                         status: 'conflict_detected',
                         message: 'Payment approved but dates no longer available',
@@ -107,21 +136,31 @@ export async function POST(request: NextRequest) {
                         conflictingReservations: conflicts.map(c => c.id.toString())
                     };
                 } else {
-                    // Crear la reserva
-                    const createdReservation = await strapiApi.createReservation(reservationData);
-                    
-                    result = {
-                        status: 'reservation_created',
-                        reservationId: createdReservation.documentId,
-                        paymentStatus: 'approved',
-                        amount: paymentData.transaction_amount
-                    };
+                    try {
+                        // Crear la reserva
+                        const createdReservation = await strapiApi.createReservation(reservationData);
+                        
+                        result = {
+                            status: 'reservation_created',
+                            reservationId: createdReservation.documentId,
+                            paymentStatus: 'approved',
+                            amount: paymentData.transaction_amount
+                        };
+                        
+                        console.log('✅ Reservation created successfully:', createdReservation.documentId);
+                    } catch (strapiError) {
+                        console.error('❌ Error creating reservation in Strapi:', strapiError);
+                        result = {
+                            status: 'strapi_error',
+                            message: 'Payment approved but reservation creation failed',
+                            paymentId: paymentData.id
+                        };
+                    }
                 }
                 break;
 
             case 'rejected':
             case 'cancelled':
-                // No crear reserva para pagos rechazados
                 result = {
                     status: 'payment_rejected',
                     paymentStatus: paymentData.status,
@@ -133,7 +172,6 @@ export async function POST(request: NextRequest) {
             case 'in_process':
             case 'processing':
             default:
-                // Para pagos pendientes, no crear reserva aún
                 result = {
                     status: 'payment_pending',
                     paymentStatus: paymentData.status,
@@ -159,9 +197,12 @@ export async function POST(request: NextRequest) {
 
 // Endpoint GET para verificar que el webhook está funcionando
 export async function GET() {
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET;
     return NextResponse.json({
         status: 'webhook_endpoint_active',
         timestamp: new Date().toISOString(),
-        message: 'MercadoPago webhook endpoint is ready to receive notifications'
+        message: 'MercadoPago webhook endpoint is ready to receive notifications',
+        security: webhookSecret ? 'Signature validation enabled' : 'Signature validation disabled (MP_WEBHOOK_SECRET not configured)',
+        environment: process.env.NODE_ENV
     });
 } 

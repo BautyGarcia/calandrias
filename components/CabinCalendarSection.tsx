@@ -22,7 +22,7 @@ interface CabinCalendarSectionProps {
 }
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
-  const { events, loading, error, syncing, loadFromUrl, refreshStrapiOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
+  const { events, loading, error, syncing, refreshStrapiOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
   const { isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })

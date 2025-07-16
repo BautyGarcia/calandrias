@@ -39,19 +39,6 @@ interface ConflictAlert {
   }>
 }
 
-// Componente para mostrar alertas de éxito
-function SuccessAlert() {
-  return (
-    <Alert className="border-[var(--green-moss)] bg-[var(--soft-cream)]">
-      <CheckCircle2 className="h-4 w-4 text-[var(--green-moss)]" />
-      <AlertTitle className="text-[var(--green-moss)]">¡Reserva confirmada!</AlertTitle>
-      <AlertDescription className="text-[var(--slate-gray)]">
-        Tu reserva ha sido procesada exitosamente. Te hemos enviado un email de confirmación con todos los detalles. Revisa tu bandeja de entrada y spam. Nos pondremos en contacto contigo pronto.
-      </AlertDescription>
-    </Alert>
-  )
-}
-
 // Componente para mostrar alertas de conflicto
 function ConflictAlert({ error, conflictingReservations }: ConflictAlert) {
   if (!conflictingReservations || conflictingReservations.length === 0) {
@@ -341,12 +328,6 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
 
                     {/* Botón de Envío */}
                     <div className="pt-4 border-t border-[var(--beige-arena)]">
-                        {submissionStatus === 'success' && (
-                            <div className="mb-4">
-                                <SuccessAlert />
-                            </div>
-                        )}
-
                         {submissionStatus === 'error' && conflictError && (
                             <div className="mb-4">
                                 <ConflictAlert 

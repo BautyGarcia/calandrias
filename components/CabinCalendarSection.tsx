@@ -101,13 +101,16 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   // Calculate nights and total price
   const nights = selectedRange.from && selectedRange.to
     ? Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24))
-    : 3 // Default 3 nights for display
+    : 0 // No default value when no dates selected
 
   const pricePerNight = parsePrice(cabin.price)
   const basePrice = pricePerNight * nights
   const cleaningFee = 50
   const serviceFee = 25
   const totalPrice = basePrice + cleaningFee + serviceFee
+
+  // Check if dates are selected for price display
+  const hasSelectedDates = selectedRange.from && selectedRange.to
 
   // Handle reservation form submission
   // Siguiendo SRP: solo orquestación, delegando responsabilidades al adaptador
@@ -269,26 +272,32 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
                       <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
-                          <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[var(--slate-gray)]">Limpieza</span>
-                          <span className="text-[var(--dark-wood)]">${formatPrice(cleaningFee)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[var(--slate-gray)]">Servicios</span>
-                          <span className="text-[var(--dark-wood)]">${formatPrice(serviceFee)}</span>
-                        </div>
-                        <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
-                          <div className="flex justify-between font-medium">
-                            <span className="text-[var(--brown-earth)]">Total</span>
-                            <span className="text-[var(--brown-earth)]">${formatPrice(totalPrice)}</span>
+                      {hasSelectedDates ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
+                            <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[var(--slate-gray)]">Limpieza</span>
+                            <span className="text-[var(--dark-wood)]">${formatPrice(cleaningFee)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[var(--slate-gray)]">Servicios</span>
+                            <span className="text-[var(--dark-wood)]">${formatPrice(serviceFee)}</span>
+                          </div>
+                          <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
+                            <div className="flex justify-between font-medium">
+                              <span className="text-[var(--brown-earth)]">Total</span>
+                              <span className="text-[var(--brown-earth)]">${formatPrice(totalPrice)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-sm text-[var(--slate-gray)] text-center">
+                          Selecciona fechas para ver el estimado de precios.
+                        </p>
+                      )}
                     </div>
 
                     {/* Reserve Button */}

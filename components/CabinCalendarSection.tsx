@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign } from "lucide-react"
@@ -22,7 +22,7 @@ interface CabinCalendarSectionProps {
 }
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
-  const { events, loading, error, syncing, loadFromUrl, refreshStrapiOnly } = useCalendarData({ cabinId: cabin.slug })
+  const { events, loading, error, syncing, loadFromUrl, refreshStrapiOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
   const { isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
@@ -69,15 +69,16 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
   // Auto-load calendar data when component mounts
   useEffect(() => {
-    if (!isAutoLoaded && !loading && events.length === 0) {
+    if (!isAutoLoaded && !loading) {
       const loadData = async () => {
         try {
-          // Always load Strapi reservations
-          await refreshStrapiOnly()
-          
-          // Only load from iCal URL if one is configured
-          if (icalUrl) {
-            await loadFromUrl(icalUrl)
+          // Siempre sincronizar con Airbnb primero si hay cabinId
+          if (cabin.slug) {
+            // Usar refreshEvents que sí ejecuta syncAirbnb
+            await refreshEvents()
+          } else {
+            // Si no hay cabinId, solo cargar reservas de Strapi
+            await refreshStrapiOnly()
           }
           
           setIsAutoLoaded(true)
@@ -89,7 +90,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       
       loadData()
     }
-  }, [icalUrl, loadFromUrl, refreshStrapiOnly, isAutoLoaded, loading, events.length, cabin.slug])
+  }, [isAutoLoaded, loading, cabin.slug, icalUrl, refreshEvents, refreshStrapiOnly])
 
   // Get the appropriate calendar cabin config
   const calendarCabin = CALENDAR_CABINS.find(c =>
@@ -109,8 +110,8 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   const totalPrice = basePrice + cleaningFee + serviceFee
 
   // Handle reservation form submission
-  // Siguiendo SRP: solo orchestración, delegando responsabilidades al adaptador
-  const handleReservationSubmit = async (formData: ReservationFormData): Promise<void> => {
+  // Siguiendo SRP: solo orquestación, delegando responsabilidades al adaptador
+  const handleReservationSubmit = useCallback(async (formData: ReservationFormData): Promise<void> => {
     if (!selectedRange.from || !selectedRange.to) {
       throw new Error('Fechas no seleccionadas')
     }
@@ -145,26 +146,26 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       
     } catch (error) {
       console.error('Error submitting reservation for payment:', error);
-      
+
       // Refrescar en caso de error para mostrar conflictos actualizados
       await refreshStrapiOnly();
-      
+
       // Re-lanzar el error para que el formulario lo maneje
       throw error;
     }
-  }
+  }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, refreshStrapiOnly])
 
-  const handleReserveClick = () => {
+  const handleReserveClick = useCallback(() => {
     if (selectedRange.from && selectedRange.to) {
       setCurrentStep('form')
     }
-  }
+  }, [selectedRange.from, selectedRange.to])
 
-  const handleBackToCalendar = () => {
+  const handleBackToCalendar = useCallback(() => {
     // Actualizar reservas de Strapi antes de volver para mostrar cambios recientes
     refreshStrapiOnly()
     setCurrentStep('calendar')
-  }
+  }, [refreshStrapiOnly])
 
   return (
     <section className="py-16 bg-[var(--soft-cream)]">

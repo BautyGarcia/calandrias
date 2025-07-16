@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CalendarEvent } from '@/types/calendar'
 import { convertICalToCalendarEvents, convertStrapiReservationsToCalendarEvents } from '@/utils/calendar'
 import { CALENDAR_CABINS } from '@/data/cabins-calendar'
@@ -18,7 +18,7 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [syncing, setSyncing] = useState(false)
 
-  const syncAirbnb = async () => {
+  const syncAirbnb = useCallback(async () => {
     try {
       setSyncing(true)
       const response = await fetch('/api/cron/sync-airbnb', {
@@ -35,9 +35,9 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } finally {
       setSyncing(false)
     }
-  }
+  }, [])
 
-  const loadStrapiReservations = async (targetCabinId?: string) => {
+  const loadStrapiReservations = useCallback(async (targetCabinId?: string) => {
     try {
       const url = targetCabinId 
         ? `/api/reservations?cabinId=${targetCabinId}`
@@ -55,14 +55,14 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
       console.error('Error loading Strapi reservations:', err)
       return []
     }
-  }
+  }, [])
 
-  const loadFromUrl = async (url: string) => {
+  const loadFromUrl = useCallback(async (url: string) => {
     setLoading(true)
     setError(null)
 
     try {
-      // Sincronizar con Airbnb antes de cargar datos
+      // Sincronizar con Airbnb antes de cargar datos (solo cuando es necesario)
       if (cabinId) {
         await syncAirbnb()
       }
@@ -97,9 +97,9 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } finally {
       setLoading(false)
     }
-  }
+  }, [cabinId, syncAirbnb, loadStrapiReservations])
 
-  const loadFromContent = async (content: string) => {
+  const loadFromContent = useCallback(async (content: string) => {
     setLoading(true)
     setError(null)
 
@@ -129,9 +129,9 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadExampleData = async () => {
+  const loadExampleData = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -145,14 +145,14 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const refreshEvents = async () => {
+  const refreshEvents = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      // Sincronizar con Airbnb antes de refrescar
+      // Sincronizar con Airbnb antes de refrescar (solo cuando es necesario)
       if (cabinId) {
         await syncAirbnb()
       }
@@ -190,15 +190,12 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } finally {
       setLoading(false)
     }
-  }
+  }, [cabinId, icalUrl, syncAirbnb, loadStrapiReservations])
 
-  const refreshStrapiOnly = async () => {
+  const refreshStrapiOnly = useCallback(async () => {
     try {
-      // Sincronizar con Airbnb antes de refrescar solo Strapi
-      if (cabinId) {
-        await syncAirbnb()
-      }
-
+      // Solo cargar reservas de Strapi sin sincronizar Airbnb
+      // (la sincronización ya se hizo en la carga inicial)
       const strapiEvents = await loadStrapiReservations(cabinId)
       
       // Mantener eventos de iCal existentes y actualizar solo Strapi
@@ -210,20 +207,20 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
     } catch (err) {
       console.error('Error refreshing Strapi events:', err)
     }
-  }
+  }, [cabinId, loadStrapiReservations, events])
 
-  const clearData = () => {
+  const clearData = useCallback(() => {
     setEvents([])
     setError(null)
     setLastUpdated(null)
-  }
+  }, [])
 
   // Auto-load en mount si se proporciona URL
   useEffect(() => {
     if (autoLoad && icalUrl) {
       loadFromUrl(icalUrl)
     }
-  }, [icalUrl, autoLoad])
+  }, [icalUrl, autoLoad, loadFromUrl])
 
   return {
     events,

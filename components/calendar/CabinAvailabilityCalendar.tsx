@@ -115,8 +115,8 @@ export default function CabinAvailabilityCalendar({ cabinId, events, selectedRan
         const isInRange = isDateInRange(date, selectedRange)
 
         let baseClasses = `
-            relative w-12 h-12 border-2 flex items-center justify-center text-sm font-semibold
-            transition-all duration-300 select-none shadow-sm
+            relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 border-2 flex items-center justify-center
+            text-xs sm:text-sm font-semibold transition-all duration-300 select-none shadow-sm
         `
 
         // Availability styles
@@ -157,19 +157,19 @@ export default function CabinAvailabilityCalendar({ cabinId, events, selectedRan
     const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'] // Spanish short weekdays
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between bg-[var(--soft-cream)] p-4 border border-[var(--beige-arena)]">
+            <div className="flex items-center justify-between bg-[var(--soft-cream)] p-3 sm:p-4 border border-[var(--beige-arena)]">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={navigateToPreviousMonth}
-                    className="p-3 hover:bg-[var(--light-sand)] text-[var(--brown-earth)]"
+                    className="p-2 sm:p-3 hover:bg-[var(--light-sand)] text-[var(--brown-earth)]"
                 >
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
 
-                <h3 className="text-xl font-serif font-bold text-[var(--brown-earth)] capitalize">
+                <h3 className="text-lg sm:text-xl font-serif font-bold text-[var(--brown-earth)] capitalize">
                     {format(currentMonth, 'MMMM yyyy', { locale: es })}
                 </h3>
 
@@ -177,20 +177,20 @@ export default function CabinAvailabilityCalendar({ cabinId, events, selectedRan
                     variant="ghost"
                     size="sm"
                     onClick={navigateToNextMonth}
-                    className="p-3 hover:bg-[var(--light-sand)] text-[var(--brown-earth)]"
+                    className="p-2 sm:p-3 hover:bg-[var(--light-sand)] text-[var(--brown-earth)]"
                 >
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
             </div>
 
             {/* Calendar Grid */}
-            <div className="bg-white p-6 border border-[var(--beige-arena)] shadow-lg">
-                <div className="grid grid-cols-7 gap-3 place-items-center">
+            <div className="bg-white p-3 sm:p-4 md:p-6 border border-[var(--beige-arena)] shadow-lg">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3 place-items-center">
                     {/* Week day headers */}
                     {weekDays.map((day, index) => (
                         <div
                             key={index}
-                            className="w-full h-12 flex items-center justify-center text-sm font-bold text-[var(--brown-earth)] uppercase bg-[var(--soft-cream)]"
+                            className="w-full h-8 sm:h-10 md:h-12 flex items-center justify-center text-xs sm:text-sm font-bold text-[var(--brown-earth)] uppercase bg-[var(--soft-cream)]"
                         >
                             {day}
                         </div>

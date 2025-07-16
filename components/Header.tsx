@@ -5,6 +5,7 @@ import {
   SheetContent,
   SheetHeader as SheetHeaderComp,
   SheetTitle as SheetTitleComp,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import Image from "next/image";
@@ -52,21 +53,31 @@ export function Header() {
                 </SheetTitleComp>
               </SheetHeaderComp>
               <nav className="flex flex-col gap-1 p-4">
-                <Link href="/">
-                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Inicio</Button>
-                </Link>
-                <Link href="/cabanas">
-                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Cabañas</Button>
-                </Link>
-                <Link href="/#servicios">
-                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Servicios</Button>
-                </Link>
-                <Link href="/#contacto">
-                  <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Contacto</Button>
-                </Link>
-                <Link href="/cabanas">
-                  <Button variant="wood" size="sm" className="justify-start w-full mt-2">Reservar</Button>
-                </Link>
+                <SheetClose asChild>
+                  <Link href="/">
+                    <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Inicio</Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/cabanas">
+                    <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Cabañas</Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/#servicios">
+                    <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Servicios</Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/#contacto">
+                    <Button variant="ghost" size="sm" className="justify-start text-[var(--brown-earth)] w-full">Contacto</Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/cabanas">
+                    <Button variant="wood" size="sm" className="justify-start w-full mt-2">Reservar</Button>
+                  </Link>
+                </SheetClose>
               </nav>
             </SheetContent>
           </Sheet>

@@ -1,21 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { paymentApi } from '@/lib/mercadopago';
-import { StrapiAPI } from '@/lib/strapi';
-import type { PaymentNotification } from '@/types/payment';
+import { NextRequest, NextResponse } from 'next/server'
+import { paymentApi } from '@/lib/mercadopago'
+import { StrapiAPI } from '@/lib/strapi'
+import { EmailService } from '@/lib/email-service'
+import { ReservationConfirmationData } from '@/emails/templates/ReservationConfirmation'
+import type { PaymentNotification } from '@/types/payment'
 
 export async function POST(request: NextRequest) {
     try {
         // ================================
         // 🔐 VALIDACIÓN DE SEGURIDAD
         // ================================
-        
+
         // Extraer headers de seguridad
         const xSignature = request.headers.get('x-signature');
         const xRequestId = request.headers.get('x-request-id');
-        
-        // Extraer query parameter data.id - MercadoPago puede enviar tanto 'id' como 'data.id'
+
         const url = new URL(request.url);
-        const dataId = url.searchParams.get('data.id') || url.searchParams.get('id');
+        const dataId = url.searchParams.get('id') || url.searchParams.get('data.id');
 
         // Verificar presencia de headers requeridos
         if (!xSignature || !xRequestId || !dataId) {
@@ -30,24 +31,22 @@ export async function POST(request: NextRequest) {
         const webhookSecret = process.env.MP_WEBHOOK_SECRET;
         if (!webhookSecret) {
             console.error('❌ MP_WEBHOOK_SECRET not configured - skipping signature validation');
-            console.log('⚠️ SECURITY WARNING: Webhook signature validation disabled');
-            // En desarrollo, continuar sin validación
-            // En producción, esto debería fallar
-        } else {
-            // Validar firma del webhook solo si tenemos la clave secreta
-            const isValidSignature = paymentApi.validateWebhookSignature(
-                xSignature,
-                xRequestId,
-                dataId
-            );
+            return NextResponse.json({ error: 'MP_WEBHOOK_SECRET not configured' }, { status: 401 });
+        }
 
-            if (!isValidSignature) {
-                console.error('❌ Invalid webhook signature - possible security threat');
-                return NextResponse.json(
-                    { error: 'Invalid webhook signature' },
-                    { status: 401 }
-                );
-            }
+        // Validar firma del webhook solo si tenemos la clave secreta
+        const isValidSignature = paymentApi.validateWebhookSignature(
+            xSignature,
+            xRequestId,
+            dataId
+        );
+
+        if (!isValidSignature) {
+            console.error('❌ Invalid webhook signature - possible security threat');
+            return NextResponse.json(
+                { error: 'Invalid webhook signature' },
+                { status: 401 }
+            );
         }
 
         // ================================
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
         // Obtener información del pago desde MercadoPago
         const paymentId = notification.data.id;
         const paymentData = await paymentApi.getPayment(paymentId);
-
+        
         // Obtener datos de la reserva desde metadata
         const metadata = paymentData.metadata;
 
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
                     guestPhone: metadata.guest_phone || '',
                     adults: parseInt(metadata.adults) || 1,
                     children: parseInt(metadata.children) || 0,
-                    pets: parseInt(metadata.pets) || 0,
+                    pets: parseInt(metadata.pets) || 0, 
                     specialRequests: metadata.special_requests || '',
                     totalPrice: paymentData.transaction_amount,
                     currency: 'ARS',
@@ -116,14 +115,14 @@ export async function POST(request: NextRequest) {
                 const existingReservations = await strapiApi.getReservations();
                 const checkInDate = new Date(metadata.check_in);
                 const checkOutDate = new Date(metadata.check_out);
-                
+
                 const conflicts = existingReservations.filter(reservation => {
                     if (reservation.cabinId !== metadata.cabin_id) return false;
                     if (reservation.status === 'cancelled') return false;
-                    
+
                     const resCheckIn = new Date(reservation.checkIn);
                     const resCheckOut = new Date(reservation.checkOut);
-                    
+
                     return (checkInDate < resCheckOut && checkOutDate > resCheckIn);
                 });
 
@@ -139,15 +138,38 @@ export async function POST(request: NextRequest) {
                     try {
                         // Crear la reserva
                         const createdReservation = await strapiApi.createReservation(reservationData);
-                        
+
                         result = {
                             status: 'reservation_created',
                             reservationId: createdReservation.documentId,
                             paymentStatus: 'approved',
                             amount: paymentData.transaction_amount
                         };
-                        
+
                         console.log('✅ Reservation created successfully:', createdReservation.documentId);
+
+                        // 📧 Enviar email de confirmación
+                        try {
+                            const emailData: ReservationConfirmationData = {
+                                guestName: metadata.guest_name,
+                                guestEmail: metadata.guest_email,
+                                cabinName: metadata.cabin_name || `Cabaña ${metadata.cabin_id}`,
+                                checkIn: new Date(metadata.check_in),
+                                checkOut: new Date(metadata.check_out),
+                                totalPrice: paymentData.transaction_amount,
+                                reservationCode: createdReservation.reservationCode || createdReservation.documentId,
+                                paymentId: paymentData.id
+                            };
+
+                            await EmailService.sendReservationConfirmation(emailData, {
+                                to: metadata.guest_email
+                            });
+
+                            console.log('✅ Confirmation email sent successfully to:', metadata.guest_email);
+                        } catch (emailError) {
+                            // No fallar el webhook por errores de email - la reserva ya está creada
+                            console.error('❌ Failed to send confirmation email (reservation still valid):', emailError);
+                        }
                     } catch (strapiError) {
                         console.error('❌ Error creating reservation in Strapi:', strapiError);
                         result = {

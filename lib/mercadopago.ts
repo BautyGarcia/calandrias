@@ -61,23 +61,6 @@ function extractSignatureData(xSignature: string): WebhookValidationData | null 
     }
 }
 
-// Función para validar timestamp
-function validateTimestamp(ts: string): boolean {
-    try {
-        const notificationTime = parseInt(ts) * 1000; // Convertir a milisegundos
-        const currentTime = Date.now();
-        const tolerance = 30 * 60 * 1000; // 30 minutos de tolerancia
-        
-        const timeDiff = Math.abs(currentTime - notificationTime);
-        const isValid = timeDiff <= tolerance;
-        
-        return isValid;
-    } catch (error) {
-        console.error('Error validating timestamp:', error);
-        return false;
-    }
-}
-
 export const paymentApi = {
     // Crear preferencia de pago para reserva
     async createReservationPreference(reservationData: ReservationPaymentData): Promise<string> {
@@ -131,7 +114,7 @@ export const paymentApi = {
         };
 
         const result = await preference.create({ body: preferenceBody });
-        
+
         if (!result.init_point) {
             throw new Error('Failed to create payment preference');
         }
@@ -143,7 +126,7 @@ export const paymentApi = {
     async getPayment(paymentId: string): Promise<PaymentData> {
         const payment = new Payment(mercadopago);
         const result = await payment.get({ id: paymentId });
-        
+
         return {
             id: String(result.id || ''),
             status: result.status as PaymentStatus,
@@ -186,26 +169,11 @@ export const paymentApi = {
                 return false;
             }
 
-            // Validar timestamp
-            if (!validateTimestamp(signatureData.ts)) {
-                console.error('❌ Timestamp validation failed - request too old or invalid');
-                // En desarrollo, continuar aunque falle el timestamp
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('⚠️ Development mode: continuing despite timestamp failure');
-                } else {
-                    return false;
-                }
-            }
-
             // Crear el template según documentación MP
             // Template: id:[data.id];request-id:[x-request-id];ts:[ts];
             const manifest = `id:${dataId};request-id:${xRequestId};ts:${signatureData.ts};`;
-
             // Calcular HMAC-SHA256
-            const hmac = createHmac('sha256', webhookSecret);
-            hmac.update(manifest);
-            const calculatedHash = hmac.digest('hex');
-
+            const calculatedHash = createHmac('sha256', webhookSecret).update(manifest).digest('hex');
             // Comparar hashes
             const isValid = calculatedHash === signatureData.hash;
 

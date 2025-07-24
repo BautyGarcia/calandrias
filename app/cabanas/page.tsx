@@ -1,5 +1,36 @@
 import { CabinsShowcase } from "@/components/CabinsShowcase"
 import Image from "next/image"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Nuestras Cabañas en Tandil | Alojamiento de Lujo en las Sierras",
+    description: "Descubre nuestras cabañas de lujo en Tandil. Refugio Íntimo, Cabaña Entre Árboles y más opciones para tu estadía perfecta en las sierras de Buenos Aires.",
+    keywords: [
+        "cabañas tandil",
+        "alojamiento tandil",
+        "cabaña refugio intimo",
+        "cabaña entre árboles", 
+        "cabañas con pileta tandil",
+        "cabañas lujo tandil",
+        "estadía tandil",
+        "vacaciones sierras",
+        "cabañas buenos aires",
+        "turismo tandil"
+    ],
+    openGraph: {
+        title: "Nuestras Cabañas en Tandil | Las Calandrias",
+        description: "Descubre nuestras cabañas de lujo en Tandil. Refugio Íntimo, Cabaña Entre Árboles y más opciones para tu estadía perfecta en las sierras.",
+        images: [{
+            url: '/gallery/vista-aerea-del-complejo.jpg',
+            width: 1200,
+            height: 630,
+            alt: 'Cabañas Las Calandrias en Tandil - Vista aérea del complejo',
+        }],
+    },
+    alternates: {
+        canonical: '/cabanas',
+    },
+}
 
 export default function CabanasPage() {
     return (

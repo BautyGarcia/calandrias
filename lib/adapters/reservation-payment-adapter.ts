@@ -34,8 +34,7 @@ export class ReservationPaymentAdapter {
             checkOut: reservationContext.checkOut.toISOString().split('T')[0],
             
             // Huéspedes (del formulario)
-            adults: formData.adults,
-            children: formData.children,
+            guests: formData.guests,
             pets: formData.pets,
             
             // Precio (del contexto)
@@ -60,8 +59,8 @@ export class ReservationPaymentAdapter {
             errors.push('Email del huésped es requerido');
         }
 
-        if (!formData.adults || formData.adults < 1) {
-            errors.push('Debe haber al menos 1 adulto');
+        if (!formData.guests || formData.guests < 1) {
+            errors.push('Debe haber al menos 1 huésped');
         }
 
         return errors;

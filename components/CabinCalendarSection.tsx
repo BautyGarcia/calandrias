@@ -80,14 +80,14 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
             // Si no hay cabinId, solo cargar reservas de Strapi
             await refreshStrapiOnly()
           }
-          
+
           setIsAutoLoaded(true)
         } catch (err) {
           console.error('Failed to load calendar data:', err)
           setIsAutoLoaded(true) // Still mark as attempted to prevent infinite retries
         }
       }
-      
+
       loadData()
     }
   }, [isAutoLoaded, loading, cabin.slug, icalUrl, refreshEvents, refreshStrapiOnly])
@@ -136,17 +136,17 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       };
 
       const paymentData = ReservationPaymentAdapter.formDataToPaymentData(
-        formData, 
+        formData,
         reservationContext
       );
 
       // Delegar a Server Action que maneja el flujo de pago
       // Esta llamada redirigirá automáticamente a MercadoPago
       await processReservationPaymentDirect(paymentData);
-      
+
       // Nota: El resto del flujo (limpiar fechas, refrescar) se maneja en las páginas de resultado
       // ya que el usuario será redirigido a MercadoPago y luego a las páginas de confirmación
-      
+
     } catch (error) {
       console.error('Error submitting reservation for payment:', error);
 
@@ -208,9 +208,9 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                             {syncing ? 'Sincronizando reservas' : 'Cargando calendario'}
                           </h3>
                           <p className="text-[var(--slate-gray)]">
-                            {syncing 
+                            {syncing
                               ? 'Actualizando reservas...'
-                              : !calendarReady 
+                              : !calendarReady
                                 ? 'Preparando calendario con fechas actualizadas...'
                                 : 'Obteniendo la disponibilidad más actualizada...'
                             }
@@ -330,6 +330,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                   onSubmit={handleReservationSubmit}
                   onCalendarRefresh={refreshStrapiOnly}
                   isLoading={isSubmittingReservation}
+                  maxGuests={cabin.detailed_capacity.max_guests}
                 />
               </div>
 

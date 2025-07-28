@@ -17,8 +17,7 @@ export interface ReservationDetails {
   guestName?: string
   checkIn: Date
   checkOut: Date
-  adults: number
-  children: number
+  guests: number
   pets: number
   notes?: string
 }

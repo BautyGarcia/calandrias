@@ -4,7 +4,7 @@ import { ArrowRight, Mountain, TreePine, Home, Sparkles } from "lucide-react"
 
 export function CabinsTeaser() {
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-16 px-4 md:px-18">
             {/* Sección visual izquierda */}
             <div className="relative">
                 {/* Imagen principal sin gradiente */}

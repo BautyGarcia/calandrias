@@ -4,97 +4,108 @@ export interface CabinFeature {
     label: string;
 }
 
+export interface CabinCapacity {
+    max_guests: number;
+    bedrooms: number;
+    bathrooms: number;
+}
+
+export interface CabinAmenities {
+    kitchen: boolean;
+    linens: boolean;
+    wood_stove: boolean;
+    air_conditioning: string;
+    pool_shared: boolean;
+    garden: boolean;
+    barbecue: boolean;
+    game_zone: boolean;
+    pets_allowed: boolean;
+}
+
+export interface CabinRating {
+    score: number;
+    review_count: number;
+}
+
 export interface Cabin {
     id: number;
     slug: string;
     name: string;
     subtitle: string;
     description: string;
+    setting: string; // Descripción del entorno
     price: string;
     capacity: string;
     bedrooms: string;
     bathrooms: string;
     image: string;
+    thumbnail: string; // Imagen de portada
     features: CabinFeature[];
     highlights: string[];
+    // Nueva información detallada
+    detailed_capacity: CabinCapacity;
+    amenities: CabinAmenities;
+    rating: CabinRating;
+    nearby_attractions: string[];
 }
 
 export const cabinsData: Cabin[] = [
     {
         id: 1,
-        slug: "refugio-intimo",
-        name: "Cabaña 1",
-        subtitle: "Refugio Íntimo",
-        description: "Perfecta para parejas que buscan una escapada romántica en medio de la naturaleza.",
+        slug: "retiro-exclusivo",
+        name: "Las Calandrias de Tandil 1",
+        subtitle: "Retiro Exclusivo",
+        description: "Cabaña entera rodeada de naturaleza en entorno tranquilo con parque compartido, fogón y zona de relax perfecta para parejas o familias pequeñas.",
+        setting: "Cálida y funcional, la Cabaña 1 ofrece un espacio ideal para descansar en pareja o en familia. Cuenta con cocina equipada, ropa blanca, estufa a leña y aire acondicionado frío/calor. Rodeada de naturaleza y con acceso a un parque compartido con fogón y zona de relax. A pocos minutos del centro de Tandil, combina comodidad y tranquilidad en un entorno natural.",
         price: "100",
-        capacity: "2 huéspedes",
+        capacity: "4 huéspedes",
         bedrooms: "1 dormitorio",
         bathrooms: "1 baño",
-        image: "/cabin1.jpg",
-        features: [
-            { icon: "Mountain", label: "Vista panorámica" },
-            { icon: "Flame", label: "Chimenea interior" },
-            { icon: "Wifi", label: "WiFi gratuito" },
-            { icon: "Car", label: "Estacionamiento" }
-        ],
-        highlights: ["Vista a las montañas", "Chimenea romántica", "Terraza privada", "Cocina equipada"]
-    },
-    {
-        id: 2,
-        slug: "confort-familiar",
-        name: "Cabaña 2",
-        subtitle: "Confort Familiar",
-        description: "Ideal para familias pequeñas que desean comodidad y aventura en un solo lugar.",
-        price: "18,000",
-        capacity: "4 huéspedes",
-        bedrooms: "2 dormitorios",
-        bathrooms: "2 baños",
-        image: "/cabin2.jpg",
-        features: [
-            { icon: "Tv", label: "Entretenimiento" },
-            { icon: "Snowflake", label: "Aire acondicionado" },
-            { icon: "ChefHat", label: "Cocina completa" },
-            { icon: "Flame", label: "Parrilla exterior" }
-        ],
-        highlights: ["Zona de juegos", "Cocina amplia", "Terraza con parrilla", "Área de descanso"]
-    },
-    {
-        id: 3,
-        slug: "experiencia-premium",
-        name: "Cabaña 3",
-        subtitle: "Experiencia Premium",
-        description: "Lujo y naturaleza se combinan para ofrecer una experiencia inolvidable.",
-        price: "25,000",
-        capacity: "6 huéspedes",
-        bedrooms: "3 dormitorios",
-        bathrooms: "2 baños",
-        image: "/cabin3.jpg",
-        features: [
-            { icon: "Waves", label: "Pileta privada" },
-            { icon: "TreePine", label: "Zona de fogatas" },
-            { icon: "Shield", label: "Seguridad 24/7" },
-            { icon: "Utensils", label: "Comedor exterior" }
-        ],
-        highlights: ["Pileta climatizada", "Jacuzzi", "Vista panorámica", "Zona de barbacoa"]
-    },
-    {
-        id: 4,
-        slug: "retiro-exclusivo",
-        name: "Cabaña 4",
-        subtitle: "Retiro Exclusivo",
-        description: "La experiencia más completa para grupos que buscan privacidad y lujo absoluto.",
-        price: "35,000",
-        capacity: "8 huéspedes",
-        bedrooms: "4 dormitorios",
-        bathrooms: "3 baños",
         image: "/cabin4.jpg",
+        thumbnail: "/cabins/cab4/thumbnail.jpg", // Imagen de portada
         features: [
-            { icon: "Mountain", label: "Vista 360°" },
-            { icon: "Waves", label: "Pileta infinity" },
-            { icon: "Flame", label: "Múltiples chimeneas" },
-            { icon: "Car", label: "Garaje privado" }
+            { icon: "Mountain", label: "Vista a las sierras" },
+            { icon: "Waves", label: "Pileta compartida" },
+            { icon: "Flame", label: "Fogón" },
+            { icon: "Car", label: "Estacionamiento" },
+            { icon: "Wifi", label: "WiFi gratuito" },
+            { icon: "ChefHat", label: "Cocina equipada" },
+            { icon: "TreePine", label: "Parque y jardín" },
+            { icon: "Utensils", label: "Parrilla" }
         ],
-        highlights: ["Pileta infinity", "Spa privado", "Sala de estar amplia", "Cocina gourmet"]
+        highlights: [
+            "Fogón", 
+            "Pileta compartida", 
+            "Zona de juegos", 
+            "Admite mascotas",
+            "Aire frío/calor",
+            "Parque compartido"
+        ],
+        // Nueva información detallada de Airbnb
+        detailed_capacity: {
+            max_guests: 4,
+            bedrooms: 1,
+            bathrooms: 1
+        },
+        amenities: {
+            kitchen: true,
+            linens: true,
+            wood_stove: true,
+            air_conditioning: "frío/calor",
+            pool_shared: true,
+            garden: true,
+            barbecue: true,
+            game_zone: true,
+            pets_allowed: true
+        },
+        rating: {
+            score: 5.0,
+            review_count: 3
+        },
+        nearby_attractions: [
+            "Piedra Movediza",
+            "Parque Independencia"
+        ]
     }
 ]
 

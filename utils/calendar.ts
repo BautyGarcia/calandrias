@@ -123,8 +123,7 @@ function extractReservationDetails(event: any): ReservationDetails | undefined {
     guestName: guestMatch?.[1]?.trim(),
     checkIn: new Date(event.start),
     checkOut: new Date(event.end),
-    adults: adultsMatch ? parseInt(adultsMatch[1]) : 0,
-    children: childrenMatch ? parseInt(childrenMatch[1]) : 0,
+    guests: adultsMatch ? parseInt(adultsMatch[1]) : 0,
     pets: petsMatch ? parseInt(petsMatch[1]) : 0,
     notes: description
   }
@@ -242,8 +241,7 @@ export function convertStrapiReservationsToCalendarEvents(
           source: reservation.source,
           checkIn: reservation.checkIn,
           checkOut: reservation.checkOut,
-          adults: reservation.adults,
-          children: reservation.children,
+          guests: reservation.guests,
           pets: reservation.pets,
           specialRequests: reservation.specialRequests
         }

@@ -26,6 +26,7 @@ interface ReservationFormProps {
     onSubmit: (formData: ReservationFormData) => Promise<void>
     onCalendarRefresh?: () => Promise<void>
     isLoading?: boolean
+    maxGuests: number
 }
 
 interface ConflictAlert {
@@ -64,13 +65,12 @@ function ConflictAlert({ error, conflictingReservations }: ConflictAlert) {
   )
 }
 
-export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading = false }: Omit<ReservationFormProps, 'reservationSummary'> & { onCalendarRefresh?: () => Promise<void> }) {
+export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading = false, maxGuests = 4 }: Omit<ReservationFormProps, 'reservationSummary'> & { onCalendarRefresh?: () => Promise<void>, maxGuests?: number }) {
     const [formData, setFormData] = useState<ReservationFormData>({
         guestName: '',
         guestEmail: '',
         guestPhone: '',
-        adults: 1,
-        children: 0,
+        guests: 1,
         pets: 0,
         specialRequests: ''
     })
@@ -93,8 +93,12 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
             newErrors.guestEmail = 'Email no válido'
         }
 
-        if (formData.adults < 1) {
-            newErrors.adults = 'Debe haber al menos 1 adulto'
+        if (formData.guests < 1) {
+            newErrors.guests = 'Debe haber al menos 1 huésped'
+        }
+
+        if (formData.guests > maxGuests) {
+            newErrors.guests = `Máximo ${maxGuests} huéspedes permitidos`
         }
 
         setErrors(newErrors)
@@ -235,52 +239,30 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
                             Huéspedes
                         </h4>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="adults" className="text-[var(--dark-wood)]">
-                                    Adultos *
+                                <Label htmlFor="guests" className="text-[var(--dark-wood)]">
+                                    Huéspedes *
                                 </Label>
                                 <Select
-                                    value={formData.adults.toString()}
-                                    onValueChange={(value) => handleInputChange('adults', parseInt(value))}
+                                    value={formData.guests.toString()}
+                                    onValueChange={(value) => handleInputChange('guests', parseInt(value))}
                                     disabled={submissionStatus === 'success'}
                                 >
-                                    <SelectTrigger className={errors.adults ? 'border-red-500' : ''}>
-                                        <SelectValue placeholder="Adultos" />
+                                    <SelectTrigger className={errors.guests ? 'border-red-500' : ''}>
+                                        <SelectValue placeholder="Huéspedes" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                                        {Array.from({ length: maxGuests }, (_, i) => i + 1).map(num => (
                                             <SelectItem key={num} value={num.toString()}>
-                                                {num} {num === 1 ? 'adulto' : 'adultos'}
+                                                {num} {num === 1 ? 'huésped' : 'huéspedes'}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.adults && (
-                                    <p className="text-sm text-red-500">{errors.adults}</p>
+                                {errors.guests && (
+                                    <p className="text-sm text-red-500">{errors.guests}</p>
                                 )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="children" className="text-[var(--dark-wood)]">
-                                    Niños
-                                </Label>
-                                <Select
-                                    value={formData.children.toString()}
-                                    onValueChange={(value) => handleInputChange('children', parseInt(value))}
-                                    disabled={submissionStatus === 'success'}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Niños" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[0, 1, 2, 3, 4, 5, 6].map(num => (
-                                            <SelectItem key={num} value={num.toString()}>
-                                                {num} {num === 1 ? 'niño' : 'niños'}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
                             </div>
 
                             <div className="space-y-2">

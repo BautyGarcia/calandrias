@@ -51,8 +51,7 @@ function generateICalEvent(reservation: LocalReservation): string[] {
         summary = `Bloqueado - ${reservation.guestName || 'No disponible'}`
     }
 
-    let description = `Reserva para ${reservation.adults} adultos`
-    if (reservation.children > 0) description += `, ${reservation.children} niños`
+    let description = `Reserva para ${reservation.guests} huéspedes`
     if (reservation.pets > 0) description += `, ${reservation.pets} mascotas`
     if (reservation.reservationCode) description += `\nCódigo: ${reservation.reservationCode}`
     if (reservation.totalPrice) description += `\nPrecio: $${reservation.totalPrice}`
@@ -183,8 +182,7 @@ export function airbnbEventToReservation(event: ICalEvent, cabinId: string): Loc
         checkOut: event.endDate,
         guestName: extractGuestName(event.summary),
         guestEmail: '',
-        adults: extractGuestCount(event.description || event.summary),
-        children: 0,
+        guests: extractGuestCount(event.description || event.summary),
         pets: 0,
         status: 'confirmed',
         source: 'airbnb',

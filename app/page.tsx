@@ -19,7 +19,7 @@ export default function Home() {
       {/* Schema Markup para SEO */}
       <LocalBusinessSchema />
       <ReviewsSchema />
-      
+
       <main className="flex min-h-screen flex-col">
         {/* Hero Section */}
         <section className="bg-[var(--light-sand)] min-h-screen flex items-center relative overflow-hidden">
@@ -180,7 +180,7 @@ export default function Home() {
             <p className="text-center text-[var(--slate-gray)] mb-12 max-w-2xl mx-auto">
               Resolvemos tus dudas para que puedas planificar tu estadía en Tandil sin preocupaciones.
             </p>
-            
+
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="item-1">

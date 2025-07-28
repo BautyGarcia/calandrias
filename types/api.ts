@@ -46,8 +46,7 @@ export interface CreateReservationRequest {
     guestName: string
     guestEmail?: string
     guestPhone?: string
-    adults?: number
-    children?: number
+    guests?: number
     pets?: number
     status?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source?: 'airbnb' | 'direct' | 'manual'

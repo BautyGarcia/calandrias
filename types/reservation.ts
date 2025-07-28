@@ -9,8 +9,7 @@ export interface LocalReservation {
     guestName: string
     guestEmail: string
     guestPhone?: string
-    adults: number
-    children: number
+    guests: number
     pets: number
     status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source: 'airbnb' | 'direct' | 'manual'
@@ -48,8 +47,7 @@ export interface ReservationFormData {
     guestName: string
     guestEmail: string
     guestPhone?: string
-    adults: number
-    children: number
+    guests: number
     pets: number
     specialRequests?: string
 }

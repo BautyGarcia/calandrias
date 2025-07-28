@@ -42,8 +42,7 @@ export interface ReservationPaymentData {
   guestPhone?: string;
   checkIn: string;
   checkOut: string;
-  adults: number;
-  children: number;
+  guests: number;
   pets: number;
   totalAmount: number;
   specialRequests?: string;

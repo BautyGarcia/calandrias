@@ -7,8 +7,7 @@ export interface StrapiReservation {
     guestName: string
     guestEmail: string
     guestPhone?: string | null
-    adults: number
-    children: number
+    guests: number
     pets: number
     status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source: 'airbnb' | 'direct' | 'manual'
@@ -33,8 +32,7 @@ export interface StrapiReservationInput {
     guestName: string
     guestEmail: string
     guestPhone?: string
-    adults: number
-    children: number
+    guests: number
     pets: number
     status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source: 'airbnb' | 'direct' | 'manual'
@@ -52,8 +50,7 @@ export interface StrapiReservationUpdate {
     guestName?: string
     guestEmail?: string
     guestPhone?: string
-    adults?: number
-    children?: number
+    guests?: number
     pets?: number
     status?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source?: 'airbnb' | 'direct' | 'manual'

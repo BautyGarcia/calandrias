@@ -535,8 +535,7 @@ export default function AdminReservas() {
                                                                 {reservation.guestName}
                                                             </div>
                                                             <div className="text-sm text-[var(--slate-gray)]">
-                                                                {reservation.adults} adultos
-                                                                {reservation.children > 0 && `, ${reservation.children} niños`}
+                                                                {reservation.guests} huéspedes
                                                                 {reservation.pets > 0 && `, ${reservation.pets} mascotas`}
                                                             </div>
                                                         </div>

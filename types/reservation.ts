@@ -58,8 +58,6 @@ export interface ReservationSummary {
     nights: number
     pricePerNight: number
     basePrice: number
-    cleaningFee: number
-    serviceFee: number
     totalPrice: number
     guestInfo: ReservationFormData
 }

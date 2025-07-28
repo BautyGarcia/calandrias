@@ -105,9 +105,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
   const pricePerNight = parsePrice(cabin.price)
   const basePrice = pricePerNight * nights
-  const cleaningFee = 50
-  const serviceFee = 25
-  const totalPrice = basePrice + cleaningFee + serviceFee
+  const totalPrice = basePrice
 
   // Check if dates are selected for price display
   const hasSelectedDates = selectedRange.from && selectedRange.to
@@ -278,14 +276,6 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                             <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
                             <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[var(--slate-gray)]">Limpieza</span>
-                            <span className="text-[var(--dark-wood)]">${formatPrice(cleaningFee)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[var(--slate-gray)]">Servicios</span>
-                            <span className="text-[var(--dark-wood)]">${formatPrice(serviceFee)}</span>
-                          </div>
                           <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                             <div className="flex justify-between font-medium">
                               <span className="text-[var(--brown-earth)]">Total</span>
@@ -354,14 +344,6 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       <div className="flex justify-between text-sm">
                         <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
                         <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[var(--slate-gray)]">Limpieza</span>
-                        <span className="text-[var(--dark-wood)]">${formatPrice(cleaningFee)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[var(--slate-gray)]">Servicios</span>
-                        <span className="text-[var(--dark-wood)]">${formatPrice(serviceFee)}</span>
                       </div>
                       <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                         <div className="flex justify-between font-medium text-lg">

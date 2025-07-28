@@ -33,19 +33,6 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
         </Text>
       </Section>
 
-      {/* Código de reserva destacado */}
-      <Section className="bg-light-sand p-6 rounded-lg border border-beige-arena/30 mb-8">
-        <Text className="text-center text-sm text-slate-gray m-0 mb-2 font-medium uppercase tracking-wide">
-          Código de Reserva
-        </Text>
-        <Text className="text-center text-3xl font-bold text-brown-earth font-mono m-0 tracking-wider">
-          {data.reservationCode}
-        </Text>
-        <Text className="text-center text-xs text-slate-gray/70 m-0 mt-2">
-          Presente este código al momento del check-in
-        </Text>
-      </Section>
-
       {/* Detalles de la reserva */}
       <Section className="mb-8">
         <Text className="text-xl font-bold text-brown-earth font-serif m-0 mb-6">

@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { getCabinDisplayName as getCabinDisplayNameFromConfig } from '@/utils/cabins'
 
 export const formatDate = (date: Date): string => {
     return format(date, "dd 'de' MMMM 'de' yyyy", { locale: es })
@@ -37,12 +38,5 @@ export const validateEmailAddress = (email: string): boolean => {
 }
 
 export const getCabinDisplayName = (cabinSlug: string): string => {
-    const cabinNames: Record<string, string> = {
-        'refugio-intimo': 'Refugio Íntimo',
-        'confort-familiar': 'Confort Familiar',
-        'experiencia-premium': 'Experiencia Premium',
-        'retiro-exclusivo': 'Retiro Exclusivo',
-    }
-
-    return cabinNames[cabinSlug] || cabinSlug
+    return getCabinDisplayNameFromConfig(cabinSlug)
 } 

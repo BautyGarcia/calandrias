@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseAirbnbICalEvents, airbnbEventToReservation } from '@/utils/ical-generator'
 import { StrapiAPI, localToStrapiReservation } from '@/lib/strapi'
-import { AIRBNB_CABIN_CONFIG } from '@/utils/cabins'
+import { getConfiguredICalUrls, getAirbnbConfigByUrl } from '@/utils/cabins'
 
 export async function GET(request: NextRequest) {
     // Verificar autorización del cron job
@@ -14,14 +14,21 @@ export async function GET(request: NextRequest) {
     const strapiAPI = new StrapiAPI()
 
     try {
-        for (const [cabinId, config] of Object.entries(AIRBNB_CABIN_CONFIG)) {
+        // Obtener todas las URLs de iCal configuradas
+        const configuredUrls = getConfiguredICalUrls()
+
+        for (const icalUrl of configuredUrls) {
             try {
-                if (!config.icalUrl) {
-                    throw new Error(`URL de iCal no configurada para ${cabinId}`)
+                // Obtener configuración de la cabaña por URL
+                const config = getAirbnbConfigByUrl(icalUrl)
+                if (!config) {
+                    throw new Error(`Configuración no encontrada para URL: ${icalUrl}`)
                 }
 
+                const { cabinId, name: cabinName } = config
+
                 // Obtener iCal de Airbnb
-                const response = await fetch(config.icalUrl, {
+                const response = await fetch(icalUrl, {
                     headers: {
                         'User-Agent': 'Calandrias-Sync/1.0'
                     }
@@ -70,7 +77,6 @@ export async function GET(request: NextRequest) {
                             if (needsUpdate) {
                                 await strapiAPI.updateReservation(existing.id, strapiData)
                                 updated++
-                            } else {
                             }
                         } else {
                             // Crear nueva reserva
@@ -95,6 +101,8 @@ export async function GET(request: NextRequest) {
 
                 results.push({
                     cabinId,
+                    cabinName,
+                    icalUrl,
                     success: true,
                     eventsFound: events.length,
                     created,
@@ -103,7 +111,7 @@ export async function GET(request: NextRequest) {
                 })
             } catch (error) {
                 results.push({
-                    cabinId,
+                    icalUrl,
                     success: false,
                     error: error instanceof Error ? error.message : 'Error desconocido'
                 })
@@ -117,11 +125,11 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `Sincronización completada: ${successCount}/${totalCount} cabañas`,
+            message: `Sincronización completada: ${successCount}/${totalCount} URLs procesadas`,
             summary: {
                 totalCreated,
                 totalUpdated,
-                cabinsProcessed: successCount
+                urlsProcessed: successCount
             },
             timestamp: new Date().toISOString(),
             results

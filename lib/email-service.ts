@@ -32,7 +32,7 @@ export class EmailService {
         from: options.from || DEFAULT_FROM_EMAIL,
         to: options.to,
         replyTo: options.replyTo || DEFAULT_REPLY_TO,
-        subject: `Confirmación de Reserva - ${data.cabinName} | Código: ${data.reservationCode}`,
+        subject: `Confirmación de Reserva - ${data.cabinName}`,
         html: emailHtml,
         tags: [
           { name: 'category', value: 'reservation-confirmation' },

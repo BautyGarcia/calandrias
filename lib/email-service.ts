@@ -1,5 +1,5 @@
 import { render } from '@react-email/render'
-import { resend, DEFAULT_FROM_EMAIL, DEFAULT_REPLY_TO } from './resend'
+import { resend, DEFAULT_FROM_EMAIL } from './resend'
 import ReservationConfirmation, { ReservationConfirmationData } from '../emails/templates/ReservationConfirmation'
 
 interface SendEmailOptions {
@@ -31,7 +31,6 @@ export class EmailService {
       const result = await resend.emails.send({
         from: options.from || DEFAULT_FROM_EMAIL,
         to: options.to,
-        replyTo: options.replyTo || DEFAULT_REPLY_TO,
         subject: `Confirmación de Reserva - ${data.cabinName}`,
         html: emailHtml,
         tags: [

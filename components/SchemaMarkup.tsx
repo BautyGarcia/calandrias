@@ -52,8 +52,8 @@ export function LocalBusinessSchema({
             "latitude": "-37.360580399999996",
             "longitude": "-59.1513972"
         },
-        "telephone": "+54 9 2494 123456",
-        "email": "info@las-calandrias.com",
+        "telephone": "+54 9 2494 02‑7920",
+        "email": "Lascalandrias123@gmail.com",
         "sameAs": [
             // Agregar redes sociales cuando estén disponibles
         ],
@@ -148,8 +148,8 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
             "postalCode": "B7000",
             "addressCountry": "AR"
         },
-        "telephone": "+54 9 2494 123456",
-        "email": "info@las-calandrias.com",
+        "telephone": "+54 9 2494 02‑7920",
+        "email": "Lascalandrias123@gmail.com",
         "url": `https://las-calandrias.com/cabanas/${cabin.subtitle.toLowerCase().replace(/\s+/g, '-')}`,
         "priceRange": `$${cabin.price}`,
         "numberOfRooms": cabin.bedrooms.charAt(0),

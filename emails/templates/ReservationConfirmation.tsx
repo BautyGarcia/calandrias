@@ -95,7 +95,7 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
           ¿Consultas sobre su reserva?
         </Text>
         <Button
-          href="https://wa.me/5492494123456"
+          href="https://wa.me/5492494027920"
           className="bg-green-moss text-white px-8 py-3 rounded-lg font-medium no-underline"
           style={{
             backgroundColor: '#3F6C29',

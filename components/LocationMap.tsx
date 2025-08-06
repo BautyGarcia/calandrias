@@ -82,13 +82,17 @@ export function LocationMap({ mapUrl = "" }: LocationMapProps) {
                     de rutas según tu punto de partida.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button variant="moss" size="lg">
-                        <Phone className="h-4 w-4 mr-2" />
-                        Llamar ahora
+                    <Button variant="moss" size="lg" asChild>
+                        <a href="tel:+5492494027920">
+                            <Phone className="h-4 w-4 mr-2" />
+                            Llamar ahora
+                        </a>
                     </Button>
-                    <Button variant="outline" size="lg" className="border-[var(--brown-earth)] text-[var(--brown-earth)]">
-                        <Mail className="h-4 w-4 mr-2" />
-                        Enviar consulta
+                    <Button variant="outline" size="lg" className="border-[var(--brown-earth)] text-[var(--brown-earth)]" asChild>
+                        <a href="mailto:Lascalandrias123@gmail.com">
+                            <Mail className="h-4 w-4 mr-2" />
+                            Enviar consulta
+                        </a>
                     </Button>
                 </div>
             </div>

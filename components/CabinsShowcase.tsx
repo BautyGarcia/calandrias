@@ -161,8 +161,10 @@ export function CabinsShowcase() {
                         restaurantes y todo lo que necesitás para una experiencia perfecta.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button variant="wood" size="lg" className="font-medium hover:scale-105 transition-transform">
-                            Contactar por WhatsApp
+                        <Button variant="wood" size="lg" className="font-medium hover:scale-105 transition-transform" asChild>
+                            <a href="https://wa.me/5492494027920">
+                                Contactar por WhatsApp
+                            </a>
                         </Button>
                     </div>
                 </div>

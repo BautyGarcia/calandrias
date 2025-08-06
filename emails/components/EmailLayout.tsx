@@ -69,7 +69,7 @@ export default function EmailLayout({ preview, children }: EmailLayoutProps) {
                             <p className="m-2">
                                 <strong>Las Calandrias</strong><br />
                                 Ruta Provincial 30, Km 8, Tandil, Buenos Aires<br />
-                                WhatsApp: +54 9 2494 123456 · Email: info@las-calandrias.com
+                                WhatsApp: +54 9 2494 027920 · Email: Lascalandrias123@gmail.com
                             </p>
                             <div className="mt-4 pt-4 border-t border-beige-arena/30">
                                 <p className="text-xs text-slate-gray/70 m-0">

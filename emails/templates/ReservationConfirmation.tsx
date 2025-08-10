@@ -84,7 +84,7 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
         </Section>
         <Section className="mb-0">
           <Text className="text-sm text-slate-gray m-0">
-            <strong>Ubicación:</strong> Ruta Provincial 30, Km 8, Tandil, Buenos Aires
+            <strong>Ubicación:</strong> Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires
           </Text>
         </Section>
       </Section>

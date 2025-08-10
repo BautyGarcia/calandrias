@@ -68,7 +68,7 @@ export default function EmailLayout({ preview, children }: EmailLayoutProps) {
                         <Section className="bg-light-sand p-6 text-center border-t border-beige-arena/30 text-sm text-slate-gray">
                             <p className="m-2">
                                 <strong>Las Calandrias</strong><br />
-                                Ruta Provincial 30, Km 8, Tandil, Buenos Aires<br />
+                                Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires<br />
                                 WhatsApp: +54 9 2494 027920 · Email: Lascalandrias123@gmail.com
                             </p>
                             <div className="mt-4 pt-4 border-t border-beige-arena/30">

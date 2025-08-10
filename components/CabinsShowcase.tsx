@@ -40,7 +40,7 @@ export function CabinsShowcase() {
                             {/* Imagen real de la cabaña */}
                             <div className="relative h-80 overflow-hidden">
                                 <Image
-                                    src={cabin.thumbnail}
+                                    src={cabin.image}
                                     alt={cabin.name}
                                     fill
                                     className="object-cover transition-transform duration-500 group-hover:scale-105"

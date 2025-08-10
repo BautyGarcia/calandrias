@@ -106,6 +106,62 @@ export const cabinsData: Cabin[] = [
             "Piedra Movediza",
             "Parque Independencia"
         ]
+    },
+    {
+        id: 2,
+        slug: "confort-familiar",
+        name: "Las Calandrias de Tandil 4",
+        subtitle: "Confort Familiar",
+        description: "Espaciosa y confortable, la Cabaña 4 se destaca por sus dos habitaciones y dos baños completos, ideal para familias o grupos que buscan comodidad.",
+        setting: "Espaciosa y confortable, la Cabaña 4 se destaca por sus dos habitaciones y dos baños completos, ideal para familias o grupos que buscan comodidad. Su estufa salamandra aporta calidez y un ambiente acogedor. Cuenta con cocina equipada, ropa blanca, aire frío/calor y acceso a parque compartido con fogón y sector de descanso. Todo pensado para disfrutar de la tranquilidad de Tandil.",
+        price: "150",
+        capacity: "6 huéspedes",
+        bedrooms: "2 dormitorios",
+        bathrooms: "2 baños",
+        image: "/cabin1.jpg",
+        thumbnail: "/cabins/cab1/thumbnail.jpg",
+        features: [
+            { icon: "Mountain", label: "Vista a las montañas" },
+            { icon: "ChefHat", label: "Cocina equipada" },
+            { icon: "Wifi", label: "WiFi gratuito" },
+            { icon: "Car", label: "Estacionamiento gratis" },
+            { icon: "Waves", label: "Pileta compartida" },
+            { icon: "Flame", label: "Chimenea interior" },
+            { icon: "Utensils", label: "Parrilla" },
+            { icon: "TreePine", label: "Zona para comer al aire libre" }
+        ],
+        highlights: [
+            "2 dormitorios",
+            "2 baños completos",
+            "Chimenea salamandra",
+            "Pileta compartida",
+            "Aire frío/calor",
+            "Parque compartido"
+        ],
+        detailed_capacity: {
+            max_guests: 6,
+            bedrooms: 2,
+            bathrooms: 2
+        },
+        amenities: {
+            kitchen: true,
+            linens: true,
+            wood_stove: true,
+            air_conditioning: "frío/calor",
+            pool_shared: true,
+            garden: true,
+            barbecue: true,
+            game_zone: false,
+            pets_allowed: true
+        },
+        rating: {
+            score: 5.0,
+            review_count: 1
+        },
+        nearby_attractions: [
+            "Piedra Movediza",
+            "Parque Independencia"
+        ]
     }
 ]
 

@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
                     specialRequests: metadata.special_requests || '',
                     totalPrice: paymentData.transaction_amount,
                     currency: 'ARS',
-                    status: 'confirmed' as const,
+                    state: 'confirmed' as const,
                     source: 'direct' as const,
                     // Datos del pago
                     paymentStatus: 'approved' as const,
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
                 const conflicts = existingReservations.filter(reservation => {
                     if (reservation.cabinId !== metadata.cabin_id) return false;
-                    if (reservation.status === 'cancelled') return false;
+                    if (reservation.state === 'cancelled') return false;
 
                     const resCheckIn = new Date(reservation.checkIn);
                     const resCheckOut = new Date(reservation.checkOut);

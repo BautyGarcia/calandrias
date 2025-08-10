@@ -48,7 +48,7 @@ export interface CreateReservationRequest {
     guestPhone?: string
     guests?: number
     pets?: number
-    status?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
+    state?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source?: 'airbnb' | 'direct' | 'manual'
     externalId?: string
     reservationCode?: string

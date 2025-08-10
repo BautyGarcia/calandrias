@@ -59,7 +59,7 @@ export default function AdminReservas() {
             setLoading(true)
             let url = '/api/reservations'
             if (filter !== 'all') {
-                url += `?status=${filter}`
+                url += `?state=${filter}`
             }
 
             const response = await fetch(url)
@@ -80,7 +80,7 @@ export default function AdminReservas() {
 
     const detectConflicts = (reservationList: LocalReservation[]) => {
         const conflicts: ConflictDetection[] = []
-        const activeReservations = reservationList.filter(r => r.status !== 'cancelled')
+        const activeReservations = reservationList.filter(r => r.state !== 'cancelled')
 
         for (let i = 0; i < activeReservations.length; i++) {
             for (let j = i + 1; j < activeReservations.length; j++) {
@@ -243,7 +243,7 @@ export default function AdminReservas() {
 
     const canModifyReservation = (reservation: LocalReservation) => {
         // Solo permitir modificar reservas directas o manuales, no de Airbnb
-        return reservation.source !== 'airbnb' && reservation.status !== 'cancelled'
+        return reservation.source !== 'airbnb' && reservation.state !== 'cancelled'
     }
 
     const getActionButtons = (reservation: LocalReservation) => {
@@ -259,7 +259,7 @@ export default function AdminReservas() {
 
         return (
             <div className="flex items-center gap-1">
-                {reservation.status === 'pending' && (
+                {reservation.state === 'pending' && (
                     <Button
                         size="sm"
                         variant="outline"
@@ -272,7 +272,7 @@ export default function AdminReservas() {
                     </Button>
                 )}
                 
-                {(reservation.status === 'pending' || reservation.status === 'confirmed') && (
+                {(reservation.state === 'pending' || reservation.state === 'confirmed') && (
                     <Button
                         size="sm"
                         variant="outline"
@@ -301,13 +301,13 @@ export default function AdminReservas() {
 
     const filteredReservations = reservations.filter(reservation => {
         if (filter === 'all') return true
-        return reservation.status === filter
+        return reservation.state === filter
     })
 
     const stats = {
         total: reservations.length,
-        confirmed: reservations.filter(r => r.status === 'confirmed').length,
-        pending: reservations.filter(r => r.status === 'pending').length,
+        confirmed: reservations.filter(r => r.state === 'confirmed').length,
+        pending: reservations.filter(r => r.state === 'pending').length,
         airbnb: reservations.filter(r => r.source === 'airbnb').length,
         direct: reservations.filter(r => r.source === 'direct').length
     }
@@ -560,7 +560,7 @@ export default function AdminReservas() {
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {getStatusBadge(reservation.status)}
+                                                    {getStatusBadge(reservation.state)}
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--brown-earth)]">

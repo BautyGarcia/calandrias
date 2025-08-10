@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams
         const cabinId = searchParams.get('cabinId')
-        const status = searchParams.get('status')
+        const state = searchParams.get('state')
 
         const strapiAPI = new StrapiAPI()
 
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
         let localReservations = strapiReservations.map(strapiToLocalReservation)
 
         // Filtrar por status si se especifica
-        if (status) {
-            localReservations = localReservations.filter(r => r.status === status)
+        if (state) {
+            localReservations = localReservations.filter(r => r.state === state)
         }
 
         return NextResponse.json({
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
             guestPhone: body.guestPhone,
             guests: body.guests || 1,
             pets: body.pets || 0,
-            status: body.status || 'confirmed',
+            state: body.state || 'confirmed',
             source: body.source || 'direct',
             externalId: body.externalId,
             reservationCode: body.reservationCode || generateReservationCode(),

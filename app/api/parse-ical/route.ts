@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
                 location: event.location,
                 organizer: event.organizer,
                 uid: event.uid,
-                status: event.status,
+                state: event.state,
                 // Incluir información de recurrencia si existe
                 rrule: event.rrule ? {
                     ...event.rrule,

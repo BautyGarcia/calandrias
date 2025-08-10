@@ -222,7 +222,7 @@ export function convertStrapiReservationsToCalendarEvents(
   reservations: LocalReservation[]
 ): CalendarEvent[] {
   return reservations
-    .filter(reservation => reservation.status !== 'cancelled') // Excluir canceladas
+    .filter(reservation => reservation.state !== 'cancelled') // Excluir canceladas
     .map(reservation => {
       // Crear fechas sin problemas de zona horaria
       const startDate = createDateFromString(reservation.checkIn)

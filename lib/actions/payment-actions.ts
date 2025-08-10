@@ -60,7 +60,7 @@ export async function processReservationPayment(formData: FormData): Promise<nev
             specialRequests: validatedData.specialRequests,
             totalPrice: validatedData.totalAmount,
             currency: 'ARS',
-            status: 'pending' as const,
+            state: 'pending' as const,
             source: 'direct' as const,
         };
 
@@ -120,7 +120,7 @@ export async function processReservationPaymentDirect(
         // Verificar conflictos con reservas existentes para la misma cabaña
         const conflicts = existingReservations.filter(reservation => {
             if (reservation.cabinId !== paymentData.cabinId) return false;
-            if (reservation.status === 'cancelled') return false;
+            if (reservation.state === 'cancelled') return false;
             
             const resCheckIn = new Date(reservation.checkIn);
             const resCheckOut = new Date(reservation.checkOut);

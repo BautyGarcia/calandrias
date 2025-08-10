@@ -20,7 +20,7 @@ export function generateICalForCabin(reservations: LocalReservation[], cabinName
     ]
 
     reservations.forEach(reservation => {
-        if (reservation.status === 'confirmed' || reservation.status === 'blocked' || reservation.status === 'pending') {
+        if (reservation.state === 'confirmed' || reservation.state === 'blocked' || reservation.state === 'pending') {
             const event = generateICalEvent(reservation)
             ical = ical.concat(event)
         }
@@ -64,7 +64,7 @@ function generateICalEvent(reservation: LocalReservation): string[] {
         `DTEND;VALUE=DATE:${dtend}`,
         `SUMMARY:${summary}`,
         `DESCRIPTION:${escapeICalText(description)}`,
-        `STATUS:${reservation.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE'}`,
+        `STATUS:${reservation.state === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE'}`,
         'TRANSP:OPAQUE',
         'CATEGORIES:RESERVA',
         'END:VEVENT'
@@ -184,7 +184,7 @@ export function airbnbEventToReservation(event: ICalEvent, cabinId: string): Loc
         guestEmail: '',
         guests: extractGuestCount(event.description || event.summary),
         pets: 0,
-        status: 'confirmed',
+        state: 'confirmed',
         source: 'airbnb',
         externalId: event.id,
         reservationCode: extractReservationCode(event.description || event.summary),

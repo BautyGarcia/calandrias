@@ -9,7 +9,7 @@ export interface StrapiReservation {
     guestPhone?: string | null
     guests: number
     pets: number
-    status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
+    state: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source: 'airbnb' | 'direct' | 'manual'
     externalId?: string | null
     reservationCode?: string | null
@@ -34,7 +34,7 @@ export interface StrapiReservationInput {
     guestPhone?: string
     guests: number
     pets: number
-    status: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
+    state: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source: 'airbnb' | 'direct' | 'manual'
     externalId?: string
     reservationCode?: string
@@ -52,7 +52,7 @@ export interface StrapiReservationUpdate {
     guestPhone?: string
     guests?: number
     pets?: number
-    status?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
+    state?: 'confirmed' | 'pending' | 'cancelled' | 'blocked'
     source?: 'airbnb' | 'direct' | 'manual'
     externalId?: string
     reservationCode?: string

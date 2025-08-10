@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
                 const eventIds = events.map(e => e.id)
                 for (const existing of existingAirbnbReservations) {
                     if (!eventIds.includes(existing.externalId || '')) {
-                        if (existing.status !== 'cancelled') {
-                            await strapiAPI.updateReservation(existing.id, { status: 'cancelled' })
+                        if (existing.state !== 'cancelled') {
+                            await strapiAPI.updateReservation(existing.id, { state: 'cancelled' })
                         }
                     }
                 }

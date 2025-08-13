@@ -53,10 +53,10 @@ export default function Home() {
             <div className="flex flex-col md:flex-row items-center gap-12">
               <div className="flex-1 space-y-8">
                 <h1 className="text-5xl md:text-7xl font-serif text-[var(--brown-earth)] font-bold leading-tight slide-up">
-                  Tu escape perfecto en las montañas de Tandil
+                  Tu refugio perfecto en las montañas de Tandil
                 </h1>
                 <p className="text-xl md:text-2xl text-[var(--slate-gray)] slide-up-delay-1">
-                  Descubre nuestras cabañas de lujo rodeadas de naturaleza en las sierras de Buenos Aires.
+                  Descubre nuestras acogedoras cabañas rodeadas de naturaleza en las sierras de Buenos Aires.
                   Un lugar para desconectar, relajarse y crear recuerdos inolvidables en Tandil.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-6 pt-6 slide-up-delay-2">
@@ -84,7 +84,7 @@ export default function Home() {
         <section id="servicios" className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-serif text-center text-[var(--brown-earth)] mb-12">
-              Diseñadas para una experiencia única en Tandil
+              Diseñadas para una experiencia especial en Tandil
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -104,8 +104,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Comodidades de lujo</h3>
-                <p className="text-[var(--slate-gray)]">Cada cabaña cuenta con amenities de primera calidad: pileta, chimenea, cocina equipada, WiFi y todas las comodidades para tu estadía perfecta.</p>
+                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Comodidades pensadas para tu bienestar</h3>
+                <p className="text-[var(--slate-gray)]">Cada cabaña cuenta con amenities cuidadosamente seleccionados: pileta, chimenea, cocina equipada, WiFi y todas las comodidades para tu estadía perfecta.</p>
               </div>
 
               <div className="flex flex-col items-center text-center p-4">
@@ -114,8 +114,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Experiencia personalizada</h3>
-                <p className="text-[var(--slate-gray)]">Atención personalizada y servicios pensados para hacer de tu estadía en Tandil una experiencia única e inolvidable.</p>
+                <h3 className="text-xl font-medium text-[var(--dark-wood)] mb-2">Atención personalizada</h3>
+                <p className="text-[var(--slate-gray)]">Nos esforzamos por brindarte una atención cálida y servicios pensados para hacer de tu estadía en Tandil una experiencia única e inolvidable.</p>
               </div>
             </div>
           </div>
@@ -131,7 +131,7 @@ export default function Home() {
               ¿Listo para tu próxima aventura en Tandil?
             </h2>
             <p className="text-[var(--light-sand)] mb-8 max-w-2xl mx-auto">
-              Descubre la tranquilidad de las sierras de Tandil y vive una experiencia única en nuestras cabañas de lujo.
+              Descubre la tranquilidad de las sierras de Tandil y vive una experiencia especial en nuestras acogedoras cabañas.
             </p>
             <Link href="/cabanas">
               <Button size="lg" variant="sand" className="font-medium">
@@ -196,7 +196,7 @@ export default function Home() {
                   <AccordionTrigger>¿Qué incluye la tarifa de las cabañas?</AccordionTrigger>
                   <AccordionContent>
                     La tarifa incluye alojamiento, ropa de cama, toallas, amenities básicos, acceso a todas las
-                    instalaciones de la cabaña (jacuzzi, chimenea, parrilla), estacionamiento y Wi-Fi.
+                    instalaciones de la cabaña (chimenea, parrilla), estacionamiento y Wi-Fi.
                     También ofrecemos un kit de bienvenida con productos locales de Tandil.
                   </AccordionContent>
                 </AccordionItem>

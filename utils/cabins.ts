@@ -14,7 +14,7 @@ export const CABIN_CONFIGS: CabinConfig[] = [
     slug: 'retiro-exclusivo',
     name: 'Retiro Exclusivo',
     displayName: 'Retiro Exclusivo',
-    capacity: 8,
+    capacity: 4,
     color: '#8b5cf6', // violet-500
     icalUrl: process.env.AIRBNB_RETIRO_EXCLUSIVO_ICAL
   },
@@ -32,7 +32,7 @@ export const CABIN_CONFIGS: CabinConfig[] = [
     slug: 'confort-familiar',
     name: 'Confort Familiar',
     displayName: 'Confort Familiar',
-    capacity: 4,
+    capacity: 6,
     color: '#3b82f6', // blue-500
     icalUrl: process.env.AIRBNB_CONFORT_FAMILIAR_ICAL
   },
@@ -41,7 +41,7 @@ export const CABIN_CONFIGS: CabinConfig[] = [
     slug: 'experiencia-premium',
     name: 'Experiencia Premium',
     displayName: 'Experiencia Premium',
-    capacity: 6,
+    capacity: 8,
     color: '#f59e0b', // amber-500
     icalUrl: process.env.AIRBNB_EXPERIENCIA_PREMIUM_ICAL
   }

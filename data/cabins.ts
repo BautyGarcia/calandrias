@@ -162,6 +162,62 @@ export const cabinsData: Cabin[] = [
             "Piedra Movediza",
             "Parque Independencia"
         ]
+    },
+    {
+        id: 3,
+        slug: "experiencia-premium",
+        name: "Las Calandrias de Tandil 5",
+        subtitle: "Experiencia Premium",
+        description: "Amplia y acogedora, la Cabaña 5 ofrece tres dormitorios y dos baños completos, perfecta para familias numerosas o grupos de amigos que buscan compartir momentos especiales.",
+        setting: "Amplia y acogedora, la Cabaña 5 ofrece tres dormitorios y dos baños completos, perfecta para familias numerosas o grupos de amigos que buscan compartir momentos especiales. Su estufa salamandra brinda calidez y crea un ambiente hogareño ideal para reunirse. Dispone de cocina completamente equipada, ropa de cama y toallas incluidas, aire acondicionado frío/calor y acceso al parque compartido con fogón y área de descanso. Un espacio pensado para disfrutar en familia de la serenidad que ofrece Tandil.",
+        price: "150",
+        capacity: "8 huéspedes",
+        bedrooms: "3 dormitorios",
+        bathrooms: "2 baños",
+        image: "/cabin5.jpg",
+        thumbnail: "/cabins/cab5/thumbnail.jpg",
+        features: [
+            { icon: "Mountain", label: "Vista a las montañas" },
+            { icon: "ChefHat", label: "Cocina equipada" },
+            { icon: "Wifi", label: "WiFi gratuito" },
+            { icon: "Car", label: "Estacionamiento gratis" },
+            { icon: "Waves", label: "Pileta compartida" },
+            { icon: "Flame", label: "Chimenea interior" },
+            { icon: "Utensils", label: "Parrilla" },
+            { icon: "TreePine", label: "Zona para comer al aire libre" }
+        ],
+        highlights: [
+            "3 dormitorios",
+            "2 baños completos",
+            "Chimenea salamandra",
+            "Pileta compartida",
+            "Aire frío/calor",
+            "Parque compartido"
+        ],
+        detailed_capacity: {
+            max_guests: 8,
+            bedrooms: 3,
+            bathrooms: 2
+        },
+        amenities: {
+            kitchen: true,
+            linens: true,
+            wood_stove: true,
+            air_conditioning: "frío/calor",
+            pool_shared: true,
+            garden: true,
+            barbecue: true,
+            game_zone: false,
+            pets_allowed: true
+        },
+        rating: {
+            score: 4.8,
+            review_count: 2
+        },
+        nearby_attractions: [
+            "Piedra Movediza",
+            "Parque Independencia"
+        ]
     }
 ]
 

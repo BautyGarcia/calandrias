@@ -108,6 +108,7 @@ export const paymentApi = {
                 guestPhone: reservationData.guestPhone || '',
                 specialRequests: reservationData.specialRequests || '',
                 totalAmount: reservationData.totalAmount.toString(),
+                pricePerNight: reservationData.pricePerNight?.toString() || '',
             },
         };
 

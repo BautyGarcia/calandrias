@@ -15,6 +15,7 @@ import { ReservationFormData } from '@/types/reservation'
 import { ReservationPaymentAdapter } from '@/lib/adapters/reservation-payment-adapter'
 import { processReservationPaymentDirect } from '@/lib/actions/payment-actions'
 import { getCabinICalUrl } from '@/utils/cabins'
+import { calculatePriceWithWeekdayDiscount, formatPrice as formatPriceUtil } from '@/utils/pricing'
 
 
 interface CabinCalendarSectionProps {
@@ -62,10 +63,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
     return Number(priceString.replace(/,/g, ''))
   }
 
-  // Helper function to format number with commas
-  const formatPrice = (price: number): string => {
-    return price.toLocaleString('es-AR')
-  }
+
 
   // Auto-load calendar data when component mounts
   useEffect(() => {
@@ -98,14 +96,20 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
     c.name.toLowerCase().includes(cabin.name.toLowerCase())
   ) || CALENDAR_CABINS[0]
 
-  // Calculate nights and total price
+  // Calculate nights and pricing with weekday discount
   const nights = selectedRange.from && selectedRange.to
     ? Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24))
     : 0 // No default value when no dates selected
 
   const pricePerNight = parsePrice(cabin.price)
-  const basePrice = pricePerNight * nights
-  const totalPrice = basePrice
+  
+  // Calculate pricing with weekday discount
+  const pricingBreakdown = selectedRange.from && selectedRange.to
+    ? calculatePriceWithWeekdayDiscount(pricePerNight, selectedRange.from, selectedRange.to)
+    : null
+  
+  const basePrice = pricingBreakdown?.basePrice || 0
+  const totalPrice = pricingBreakdown?.finalPrice || 0
 
   // Check if dates are selected for price display
   const hasSelectedDates = selectedRange.from && selectedRange.to
@@ -130,7 +134,8 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
         cabinName: cabin.name,
         checkIn: selectedRange.from,
         checkOut: selectedRange.to,
-        totalPrice: totalPrice
+        totalPrice: totalPrice,
+        pricePerNight: pricePerNight
       };
 
       const paymentData = ReservationPaymentAdapter.formDataToPaymentData(
@@ -154,7 +159,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       // Re-lanzar el error para que el formulario lo maneje
       throw error;
     }
-  }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, refreshStrapiOnly])
+  }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, pricePerNight, refreshStrapiOnly])
 
   const handleReserveClick = useCallback(() => {
     if (selectedRange.from && selectedRange.to) {
@@ -270,17 +275,31 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
                       <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
 
-                      {hasSelectedDates ? (
+                      {hasSelectedDates && pricingBreakdown ? (
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
-                            <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
+                            <span className="text-[var(--dark-wood)]">{formatPriceUtil(basePrice)}</span>
                           </div>
+                          
+                          {pricingBreakdown.hasDiscount && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-green-600">Descuento días de semana (15%)</span>
+                              <span className="text-green-600">-{formatPriceUtil(pricingBreakdown.weekdayDiscount)}</span>
+                            </div>
+                          )}
+                          
                           <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                             <div className="flex justify-between font-medium">
                               <span className="text-[var(--brown-earth)]">Total</span>
-                              <span className="text-[var(--brown-earth)]">${formatPrice(totalPrice)}</span>
+                              <span className="text-[var(--brown-earth)]">{formatPriceUtil(totalPrice)}</span>
                             </div>
+                            
+                            {pricingBreakdown.hasDiscount && (
+                              <p className="text-xs text-green-600 text-right mt-1">
+                                ¡Ahorrás {formatPriceUtil(pricingBreakdown.weekdayDiscount)}!
+                              </p>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -343,13 +362,27 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                     <div className="space-y-2 pt-4 border-t border-[var(--beige-arena)]">
                       <div className="flex justify-between text-sm">
                         <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
-                        <span className="text-[var(--dark-wood)]">${formatPrice(basePrice)}</span>
+                        <span className="text-[var(--dark-wood)]">{formatPriceUtil(basePrice)}</span>
                       </div>
+                      
+                      {pricingBreakdown?.hasDiscount && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-green-600">Descuento días de semana (15%)</span>
+                          <span className="text-green-600">-{formatPriceUtil(pricingBreakdown.weekdayDiscount)}</span>
+                        </div>
+                      )}
+                      
                       <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                         <div className="flex justify-between font-medium text-lg">
                           <span className="text-[var(--brown-earth)]">Total</span>
-                          <span className="text-[var(--brown-earth)]">${formatPrice(totalPrice)}</span>
+                          <span className="text-[var(--brown-earth)]">{formatPriceUtil(totalPrice)}</span>
                         </div>
+                        
+                        {pricingBreakdown?.hasDiscount && (
+                          <p className="text-xs text-green-600 text-right mt-1">
+                            ¡Ahorrás {formatPriceUtil(pricingBreakdown.weekdayDiscount)}!
+                          </p>
+                        )}
                       </div>
                     </div>
 

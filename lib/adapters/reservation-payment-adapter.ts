@@ -17,6 +17,7 @@ export class ReservationPaymentAdapter {
             checkIn: Date;
             checkOut: Date;
             totalPrice: number;
+            pricePerNight?: number;
         }
     ): ReservationPaymentData {
         return {
@@ -39,6 +40,7 @@ export class ReservationPaymentAdapter {
             
             // Precio (del contexto)
             totalAmount: reservationContext.totalPrice,
+            pricePerNight: reservationContext.pricePerNight,
             
             // Solicitudes especiales (del formulario)
             specialRequests: formData.specialRequests,

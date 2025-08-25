@@ -62,6 +62,7 @@ export class EmailService {
       totalPrice: 45000,
       reservationCode: 'CAL-2025-001',
       paymentId: 'mp_test_123456',
+      pricePerNight: 25000, // Para testing de descuentos
     }
 
     return this.sendReservationConfirmation(testData, { to })

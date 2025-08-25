@@ -46,6 +46,7 @@ export interface ReservationPaymentData {
   pets: number;
   totalAmount: number;
   specialRequests?: string;
+  pricePerNight?: number;
 }
 
 export interface PaymentPreferenceBody {

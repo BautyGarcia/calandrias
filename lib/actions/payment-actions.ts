@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { paymentApi } from '@/lib/mercadopago';
 import type { ReservationPaymentData } from '@/types/payment';
 import { StrapiAPI } from '@/lib/strapi';
+import { calculatePriceWithWeekdayDiscount } from '@/utils/pricing';
 import { z } from 'zod';
 
 // Schema de validación para el formulario de pago
@@ -133,9 +134,23 @@ export async function processReservationPaymentDirect(
             throw new Error('Las fechas seleccionadas ya no están disponibles. Por favor, selecciona otras fechas.');
         }
 
+        // Recalcular precio con descuentos aplicados antes de enviar a MercadoPago
+        // Esto asegura que el precio en MP sea el correcto
+        const pricingBreakdown = calculatePriceWithWeekdayDiscount(
+            paymentData.totalAmount / Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)),
+            checkInDate,
+            checkOutDate
+        );
+
+        // Actualizar el monto total con el precio calculado con descuentos
+        const finalPaymentData: ReservationPaymentData = {
+            ...paymentData,
+            totalAmount: pricingBreakdown.finalPrice
+        };
+
         // Crear preferencia con todos los datos en metadata (no crear reserva aún)
         // La reserva se creará en el webhook cuando el pago sea confirmado
-        const checkoutUrl = await paymentApi.createReservationPreference(paymentData);
+        const checkoutUrl = await paymentApi.createReservationPreference(finalPaymentData);
         redirect(checkoutUrl);
 
     } catch (error) {

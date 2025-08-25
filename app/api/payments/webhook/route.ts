@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
                                 checkOut: new Date(metadata.check_out),
                                 totalPrice: paymentData.transaction_amount,
                                 reservationCode: createdReservation.reservationCode || createdReservation.documentId,
-                                paymentId: paymentData.id
+                                paymentId: paymentData.id,
+                                pricePerNight: metadata.price_per_night ? parseFloat(metadata.price_per_night) : undefined
                             };
 
                             await EmailService.sendReservationConfirmation(emailData, {

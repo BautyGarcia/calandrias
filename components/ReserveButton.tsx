@@ -3,20 +3,21 @@
 import { Button } from '@/components/ui/button'
 
 export function ReserveButton() {
-    const scrollToCalendar = () => {
-        const calendarSection = document.getElementById('calendar-section')
-        if (calendarSection) {
-            calendarSection.scrollIntoView({ behavior: 'smooth' })
-        }
-    }
+    // const scrollToCalendar = () => {
+    //     const calendarSection = document.getElementById('calendar-section')
+    //     if (calendarSection) {
+    //         calendarSection.scrollIntoView({ behavior: 'smooth' })
+    //     }
+    // }
 
     return (
         <Button
-            onClick={scrollToCalendar}
-            className="w-full cursor-pointer"
+            onClick={() => {}}
+            className="w-full cursor-not-allowed opacity-50"
             size="lg"
+            disabled={true}
         >
-            Reservar Ahora
+            Reservas temporalmente deshabilitadas
         </Button>
     )
 } 

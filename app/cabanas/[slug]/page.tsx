@@ -256,12 +256,14 @@ export default async function CabinPage({ params }: PageProps) {
                             <div className="lg:col-span-1">
                                 <Card className="border-0 shadow-xl sticky top-8 bg-white">
                                     <CardContent className="p-8">
+                                        {/* Precio temporalmente comentado
                                         <div className="text-center mb-6">
                                             <p className="text-4xl font-bold text-[var(--brown-earth)]">
                                                 ${cabin.price}
                                             </p>
                                             <p className="text-[var(--slate-gray)] text-lg">por noche</p>
                                         </div>
+                                        */}
 
                                         <div className="space-y-4 mb-6">
                                             <div className="flex justify-between items-center py-2 border-b border-[var(--light-sand)]">

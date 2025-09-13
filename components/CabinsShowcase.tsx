@@ -131,13 +131,15 @@ export function CabinsShowcase() {
 
                                 {/* Pricing y CTA mejorado */}
                                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--light-sand)]">
+                                    {/* Precio temporalmente comentado
                                     <div>
                                         <span className="text-2xl font-bold text-[var(--brown-earth)]">
                                             ${cabin.price}
                                         </span>
                                         <span className="text-[var(--slate-gray)] text-sm"> /noche</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[var(--green-moss)] font-medium text-sm">
+                                    */}
+                                    <div className="flex items-center gap-2 text-[var(--green-moss)] font-medium text-sm ml-auto">
                                         <span>Ver detalles</span>
                                         <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

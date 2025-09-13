@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import {
     MapPin,
     Phone,
-    Mail
+    Mail,
+    MessageCircle
 } from "lucide-react"
 
 interface LocationMapProps {
@@ -83,6 +84,12 @@ export function LocationMap({ mapUrl = "" }: LocationMapProps) {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button variant="moss" size="lg" asChild>
+                        <a href="https://wa.me/5492494027920">
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            WhatsApp
+                        </a>
+                    </Button>
+                    <Button variant="outline" size="lg" className="border-[var(--brown-earth)] text-[var(--brown-earth)]" asChild>
                         <a href="tel:+5492494027920">
                             <Phone className="h-4 w-4 mr-2" />
                             Llamar ahora

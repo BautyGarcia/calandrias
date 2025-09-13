@@ -340,6 +340,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                   onCalendarRefresh={refreshStrapiOnly}
                   isLoading={isSubmittingReservation}
                   maxGuests={cabin.detailed_capacity.max_guests}
+                  temporarilyDisabled={true}
                 />
               </div>
 

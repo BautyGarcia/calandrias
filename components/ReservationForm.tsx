@@ -27,6 +27,7 @@ interface ReservationFormProps {
     onCalendarRefresh?: () => Promise<void>
     isLoading?: boolean
     maxGuests: number
+    temporarilyDisabled?: boolean
 }
 
 interface ConflictAlert {
@@ -65,7 +66,7 @@ function ConflictAlert({ error, conflictingReservations }: ConflictAlert) {
   )
 }
 
-export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading = false, maxGuests = 4 }: Omit<ReservationFormProps, 'reservationSummary'> & { onCalendarRefresh?: () => Promise<void>, maxGuests?: number }) {
+export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading = false, maxGuests = 4, temporarilyDisabled = false }: Omit<ReservationFormProps, 'reservationSummary'> & { onCalendarRefresh?: () => Promise<void>, maxGuests?: number, temporarilyDisabled?: boolean }) {
     const [formData, setFormData] = useState<ReservationFormData>({
         guestName: '',
         guestEmail: '',
@@ -321,10 +322,16 @@ export default function ReservationForm({ onSubmit, onCalendarRefresh, isLoading
 
                         <Button
                             type="submit"
-                            disabled={isLoading || isSubmitting || (submissionStatus === 'error' && !!conflictError) || submissionStatus === 'success'}
-                            className="w-full bg-[var(--green-moss)] hover:bg-[var(--forest-green)] text-white font-medium py-3"
+                            disabled={temporarilyDisabled || isLoading || isSubmitting || (submissionStatus === 'error' && !!conflictError) || submissionStatus === 'success'}
+                            className={`w-full font-medium py-3 ${
+                                temporarilyDisabled 
+                                    ? 'bg-gray-400 hover:bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                    : 'bg-[var(--green-moss)] hover:bg-[var(--forest-green)] text-white'
+                            }`}
                         >
-                            {(isLoading || isSubmitting) ? (
+                            {temporarilyDisabled ? (
+                                'Reservas temporalmente deshabilitadas'
+                            ) : (isLoading || isSubmitting) ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     Redirigiendo a pago...

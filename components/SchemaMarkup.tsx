@@ -1,4 +1,6 @@
 import Script from 'next/script'
+import { Cabin } from '@/types/cabin'
+import { getMinimumPrice, formatPrice } from '@/utils/pricing'
 
 interface LocalBusinessSchemaProps {
     name?: string
@@ -8,17 +10,14 @@ interface LocalBusinessSchemaProps {
 }
 
 interface HotelSchemaProps {
-    cabin: {
-        name: string
-        subtitle: string
-        description: string
-        price: string
-        capacity: string
-        bedrooms: string
-        bathrooms: string
-        image: string
-        features: Array<{ icon: string; label: string }>
-    }
+    cabin: Cabin
+}
+
+// Helper para construir URL de imagen de Strapi
+function getStrapiImageUrl(url: string): string {
+    if (url.startsWith('http')) return url
+    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
+    return `${strapiUrl}${url}`
 }
 
 export function LocalBusinessSchema({
@@ -134,12 +133,16 @@ export function LocalBusinessSchema({
 }
 
 export function HotelSchema({ cabin }: HotelSchemaProps) {
+    const minPrice = getMinimumPrice(cabin)
+    const formattedPrice = formatPrice(minPrice)
+    const imageUrl = getStrapiImageUrl(cabin.image.url)
+    
     const schema = {
         "@context": "https://schema.org",
         "@type": "Hotel",
         "name": `${cabin.subtitle} - Las Calandrias`,
         "description": cabin.description,
-        "image": `https://las-calandrias.com${cabin.image}`,
+        "image": imageUrl,
         "address": {
             "@type": "PostalAddress",
             "streetAddress": "Ronca-Hue 50",
@@ -150,10 +153,10 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
         },
         "telephone": "+54 9 2494 02‑7920",
         "email": "Lascalandrias123@gmail.com",
-        "url": `https://las-calandrias.com/cabanas/${cabin.subtitle.toLowerCase().replace(/\s+/g, '-')}`,
-        "priceRange": `$${cabin.price}`,
-        "numberOfRooms": cabin.bedrooms.charAt(0),
-        "petsAllowed": true,
+        "url": `https://las-calandrias.com/cabanas/${cabin.slug}`,
+        "priceRange": formattedPrice,
+        "numberOfRooms": cabin.bedrooms,
+        "petsAllowed": cabin.amenities.pets_allowed,
         "amenityFeature": cabin.features.map(feature => ({
             "@type": "LocationFeatureSpecification",
             "name": feature.label,
@@ -165,14 +168,14 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
             "accommodationType": "Cabaña",
             "occupancy": {
                 "@type": "QuantitativeValue",
-                "maxValue": cabin.capacity.charAt(0)
+                "maxValue": cabin.capacity
             }
         }
     }
 
     return (
         <Script
-            id={`hotel-schema-${cabin.subtitle.toLowerCase().replace(/\s+/g, '-')}`}
+            id={`hotel-schema-${cabin.slug}`}
             type="application/ld+json"
             dangerouslySetInnerHTML={{
                 __html: JSON.stringify(schema)

@@ -1,4 +1,5 @@
 import { LocalReservation, StrapiReservation, StrapiReservationInput, StrapiReservationUpdate } from '@/types'
+import { Cabin } from '@/types/cabin'
 
 export class StrapiAPI {
     private baseURL: string
@@ -58,9 +59,9 @@ export class StrapiAPI {
         return response
     }
 
-    // Actualizar reserva existente
-    async updateReservation(id: number, reservationData: StrapiReservationUpdate): Promise<StrapiReservation> {
-        const response = await this.request<StrapiReservation>(`/reservations/${id}`, {
+    // Actualizar reserva existente (usar documentId para Strapi v5)
+    async updateReservation(documentId: string, reservationData: StrapiReservationUpdate): Promise<StrapiReservation> {
+        const response = await this.request<StrapiReservation>(`/reservations/${documentId}`, {
             method: 'PUT',
             body: JSON.stringify({
                 data: reservationData
@@ -69,9 +70,9 @@ export class StrapiAPI {
         return response
     }
 
-    // Eliminar reserva
-    async deleteReservation(id: number): Promise<void> {
-        await this.request(`/reservations/${id}`, {
+    // Eliminar reserva (usar documentId para Strapi v5)
+    async deleteReservation(documentId: string): Promise<void> {
+        await this.request(`/reservations/${documentId}`, {
             method: 'DELETE'
         })
     }
@@ -134,6 +135,64 @@ export class StrapiAPI {
         })
         
         return response
+    }
+
+    // ============================================
+    // CABINS ENDPOINTS
+    // ============================================
+
+    // Obtener todas las cabañas
+    async getCabins(): Promise<Cabin[]> {
+        const response = await this.request<Cabin[]>('/cabins')
+        return response || []
+    }
+
+    // Obtener cabaña por slug
+    async getCabinBySlug(slug: string): Promise<Cabin | null> {
+        const response = await this.request<Cabin[]>(`/cabins?filters[slug][$eq]=${slug}&populate=*`)
+        return response?.[0] || null
+    }
+
+    // Obtener cabaña por ID
+    async getCabinById(id: number): Promise<Cabin | null> {
+        const response = await this.request<Cabin>(`/cabins/${id}?populate=*`)
+        return response || null
+    }
+
+    // Obtener cabaña por documentId
+    async getCabinByDocumentId(documentId: string): Promise<Cabin | null> {
+        const response = await this.request<Cabin[]>(`/cabins?filters[documentId][$eq]=${documentId}&populate=*`)
+        return response?.[0] || null
+    }
+
+    /**
+     * Obtiene configuraciones de sync de Airbnb desde Strapi
+     * SOLO para uso en backend (cron jobs, admin APIs)
+     * Las URLs son campos privados y no se exponen al frontend
+     */
+    async getAirbnbSyncConfigs(): Promise<Array<{
+        cabinId: string;
+        cabinSlug: string;
+        cabinName: string;
+        icalUrl: string;
+    }>> {
+        try {
+            // Obtener todas las cabañas (incluyendo campos privados si están disponibles)
+            const cabins = await this.getCabins();
+            
+            // Filtrar solo las que tienen URL de Airbnb configurada
+            return cabins
+                .filter(cabin => cabin.airbnb_ical_url && cabin.airbnb_ical_url.trim() !== '')
+                .map(cabin => ({
+                    cabinId: cabin.slug, // Usar slug como ID principal
+                    cabinSlug: cabin.slug,
+                    cabinName: cabin.name,
+                    icalUrl: cabin.airbnb_ical_url!
+                }));
+        } catch (error) {
+            console.error('Error fetching Airbnb sync configs from Strapi:', error);
+            throw error;
+        }
     }
 }
 

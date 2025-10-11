@@ -1,6 +1,5 @@
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { getCabinDisplayName as getCabinDisplayNameFromConfig } from '@/utils/cabins'
 
 export const formatDate = (date: Date): string => {
     return format(date, "dd 'de' MMMM 'de' yyyy", { locale: es })
@@ -38,5 +37,9 @@ export const validateEmailAddress = (email: string): boolean => {
 }
 
 export const getCabinDisplayName = (cabinSlug: string): string => {
-    return getCabinDisplayNameFromConfig(cabinSlug)
+    // Simplemente retornar el slug formateado como nombre
+    return cabinSlug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
 } 

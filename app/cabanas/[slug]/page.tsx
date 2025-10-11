@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getCabinBySlug, getAllCabinSlugs } from '@/data/cabins'
+import { StrapiAPI } from '@/lib/strapi'
 import CabinCalendarSection from '@/components/CabinCalendarSection'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,22 +7,17 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { HotelSchema } from '@/components/SchemaMarkup'
 import { ReserveButton } from '@/components/ReserveButton'
+import { CABIN_FEATURE_ICONS } from '@/utils/icons'
 import {
     Star,
     MapPin,
     Users,
     Bed,
     Bath,
-    Mountain,
-    Waves,
-    Flame,
-    Car,
-    Wifi,
-    ChefHat,
-    TreePine,
-    Utensils,
     Heart,
-    Snowflake
+    Snowflake,
+    ChefHat,
+    Waves
 } from 'lucide-react'
 
 interface PageProps {
@@ -31,21 +26,17 @@ interface PageProps {
     }>
 }
 
-// Map de iconos para las features
-const iconMap = {
-    Mountain,
-    Waves,
-    Flame,
-    Car,
-    Wifi,
-    ChefHat,
-    TreePine,
-    Utensils
+// Helper para construir URL de imagen de Strapi
+function getStrapiImageUrl(url: string): string {
+    if (url.startsWith('http')) return url
+    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
+    return `${strapiUrl}${url}`
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params
-    const cabin = getCabinBySlug(slug)
+    const strapiApi = new StrapiAPI()
+    const cabin = await strapiApi.getCabinBySlug(slug)
 
     if (!cabin) {
         return {
@@ -56,6 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const title = `${cabin.subtitle} - ${cabin.name} | Cabaña en Tandil - Las Calandrias`
     const description = `${cabin.description} ${cabin.capacity}, ${cabin.bedrooms}, ${cabin.bathrooms}. Reservá tu estadía en Las Calandrias, Tandil.`
+    const thumbnailUrl = getStrapiImageUrl(cabin.thumbnail.url)
 
     return {
         title,
@@ -78,7 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             title,
             description,
             images: [{
-                url: cabin.thumbnail || '/gallery/vista-aerea-del-complejo.jpg',
+                url: thumbnailUrl,
                 width: 1200,
                 height: 630,
                 alt: `${cabin.subtitle} - Cabaña en Las Calandrias, Tandil`,
@@ -89,7 +81,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             card: 'summary_large_image',
             title,
             description,
-            images: [cabin.thumbnail || '/gallery/vista-aerea-del-complejo.jpg'],
+            images: [thumbnailUrl],
         },
         alternates: {
             canonical: `/cabanas/${slug}`,
@@ -98,19 +90,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export async function generateStaticParams() {
-    const slugs = getAllCabinSlugs()
-    return slugs.map((slug) => ({
-        slug: slug,
+    const strapiApi = new StrapiAPI()
+    const cabins = await strapiApi.getCabins()
+    
+    return cabins.map((cabin) => ({
+        slug: cabin.slug,
     }))
 }
 
+// Revalidar cada hora
+export const revalidate = 3600
+
 export default async function CabinPage({ params }: PageProps) {
     const { slug } = await params
-    const cabin = getCabinBySlug(slug)
+    const strapiApi = new StrapiAPI()
+    const cabin = await strapiApi.getCabinBySlug(slug)
 
     if (!cabin) {
         notFound()
     }
+
+    const thumbnailUrl = getStrapiImageUrl(cabin.thumbnail.url)
 
     return (
         <>
@@ -121,8 +121,8 @@ export default async function CabinPage({ params }: PageProps) {
                 {/* Hero Section con imagen de fondo */}
                 <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
                     <Image
-                        src={cabin.thumbnail}
-                        alt={`${cabin.subtitle} - Cabaña en Las Calandrias`}
+                        src={thumbnailUrl}
+                        alt={cabin.thumbnail.alternativeText || `${cabin.subtitle} - Cabaña en Las Calandrias`}
                         fill
                         className="object-cover"
                         priority
@@ -159,7 +159,6 @@ export default async function CabinPage({ params }: PageProps) {
                                         {cabin.name}
                                     </h1>
                                 </div>
-
 
                                 {/* Info básica */}
                                 <div className="flex items-center gap-6 text-lg">
@@ -202,10 +201,10 @@ export default async function CabinPage({ params }: PageProps) {
                                     <CardContent className="p-8">
                                         <h2 className="text-3xl font-serif text-[var(--brown-earth)] mb-6">Comodidades</h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {cabin.features.map((feature, index) => {
-                                                const IconComponent = iconMap[feature.icon as keyof typeof iconMap]
+                                            {cabin.features.map((feature) => {
+                                                const IconComponent = CABIN_FEATURE_ICONS[feature.icon]
                                                 return (
-                                                    <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--soft-cream)] border border-[var(--beige-arena)]/30">
+                                                    <div key={feature.id} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--soft-cream)] border border-[var(--beige-arena)]/30">
                                                         <div className="w-8 h-8 text-[var(--green-moss)] flex items-center justify-center">
                                                             {IconComponent ? <IconComponent className="h-5 w-5" /> : <span>✓</span>}
                                                         </div>
@@ -252,31 +251,22 @@ export default async function CabinPage({ params }: PageProps) {
                                 </Card>
                             </div>
 
-                            {/* Sidebar con precio y reserva */}
+                            {/* Sidebar con info y reserva */}
                             <div className="lg:col-span-1">
                                 <Card className="border-0 shadow-xl sticky top-8 bg-white">
                                     <CardContent className="p-8">
-                                        {/* Precio temporalmente comentado
-                                        <div className="text-center mb-6">
-                                            <p className="text-4xl font-bold text-[var(--brown-earth)]">
-                                                ${cabin.price}
-                                            </p>
-                                            <p className="text-[var(--slate-gray)] text-lg">por noche</p>
-                                        </div>
-                                        */}
-
                                         <div className="space-y-4 mb-6">
                                             <div className="flex justify-between items-center py-2 border-b border-[var(--light-sand)]">
                                                 <span className="text-[var(--slate-gray)]">Capacidad</span>
-                                                <span className="font-medium text-[var(--brown-earth)]">{cabin.capacity}</span>
+                                                <span className="font-medium text-[var(--brown-earth)]">{cabin.capacity} huéspedes</span>
                                             </div>
                                             <div className="flex justify-between items-center py-2 border-b border-[var(--light-sand)]">
                                                 <span className="text-[var(--slate-gray)]">Habitaciones</span>
-                                                <span className="font-medium text-[var(--brown-earth)]">{cabin.bedrooms}</span>
+                                                <span className="font-medium text-[var(--brown-earth)]">{parseInt(cabin.bedrooms) > 1 ? `${cabin.bedrooms} habitaciones` : `${cabin.bedrooms} habitación`}</span>
                                             </div>
                                             <div className="flex justify-between items-center py-2 border-b border-[var(--light-sand)]">
                                                 <span className="text-[var(--slate-gray)]">Baños</span>
-                                                <span className="font-medium text-[var(--brown-earth)]">{cabin.bathrooms}</span>
+                                                <span className="font-medium text-[var(--brown-earth)]">{parseInt(cabin.bathrooms) > 1 ? `${cabin.bathrooms} baños` : `${cabin.bathrooms} baño`}</span>
                                             </div>
                                         </div>
 
@@ -302,4 +292,4 @@ export default async function CabinPage({ params }: PageProps) {
             </main>
         </>
     )
-} 
+}

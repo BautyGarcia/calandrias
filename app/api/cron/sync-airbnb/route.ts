@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseAirbnbICalEvents, airbnbEventToReservation } from '@/utils/ical-generator'
 import { StrapiAPI, localToStrapiReservation } from '@/lib/strapi'
-import { getConfiguredICalUrls, getAirbnbConfigByUrl } from '@/utils/cabins'
 
 export async function GET(request: NextRequest) {
     // Verificar autorización del cron job
@@ -14,24 +13,30 @@ export async function GET(request: NextRequest) {
     const strapiAPI = new StrapiAPI()
 
     try {
-        // Obtener todas las URLs de iCal configuradas
-        const configuredUrls = getConfiguredICalUrls()
+        // Obtener configuraciones desde Strapi (no desde archivos hardcodeados)
+        const configs = await strapiAPI.getAirbnbSyncConfigs()
 
-        for (const icalUrl of configuredUrls) {
+        if (configs.length === 0) {
+            return NextResponse.json({
+                success: true,
+                message: 'No hay cabañas configuradas para sincronización con Airbnb',
+                timestamp: new Date().toISOString(),
+                results: []
+            })
+        }
+
+        // Procesar cada cabaña
+        for (const config of configs) {
             try {
-                // Obtener configuración de la cabaña por URL
-                const config = getAirbnbConfigByUrl(icalUrl)
-                if (!config) {
-                    throw new Error(`Configuración no encontrada para URL: ${icalUrl}`)
-                }
-
-                const { cabinId, name: cabinName } = config
+                const { cabinId, cabinSlug, cabinName, icalUrl } = config
 
                 // Obtener iCal de Airbnb
                 const response = await fetch(icalUrl, {
                     headers: {
                         'User-Agent': 'Calandrias-Sync/1.0'
-                    }
+                    },
+                    // Timeout de 10 segundos para evitar bloqueos
+                    signal: AbortSignal.timeout(10000)
                 })
 
                 if (!response.ok) {
@@ -43,8 +48,8 @@ export async function GET(request: NextRequest) {
                 // Parsear eventos del iCal
                 const events = parseAirbnbICalEvents(icalContent)
 
-                // Obtener reservas existentes de Airbnb en Strapi
-                const existingReservations = await strapiAPI.getReservations(cabinId)
+                // Obtener reservas existentes de Airbnb en Strapi (usar slug)
+                const existingReservations = await strapiAPI.getReservations(cabinSlug)
 
                 const existingAirbnbReservations = existingReservations.filter(
                     r => r.source === 'airbnb'
@@ -57,7 +62,7 @@ export async function GET(request: NextRequest) {
                 // Procesar cada evento de Airbnb
                 for (const event of events) {
                     try {
-                        const reservationData = airbnbEventToReservation(event, cabinId)
+                        const reservationData = airbnbEventToReservation(event, cabinSlug)
 
                         // Buscar si ya existe esta reserva
                         const existing = existingAirbnbReservations.find(
@@ -75,7 +80,7 @@ export async function GET(request: NextRequest) {
                                 existing.guestName !== strapiData.guestName
 
                             if (needsUpdate) {
-                                await strapiAPI.updateReservation(existing.id, strapiData)
+                                await strapiAPI.updateReservation(existing.documentId, strapiData)
                                 updated++
                             }
                         } else {
@@ -84,7 +89,8 @@ export async function GET(request: NextRequest) {
                             await strapiAPI.createReservation(strapiData)
                             created++
                         }
-                    } catch {
+                    } catch (error) {
+                        console.error(`Error processing event ${event.id}:`, error)
                         errors++
                     }
                 }
@@ -94,7 +100,7 @@ export async function GET(request: NextRequest) {
                 for (const existing of existingAirbnbReservations) {
                     if (!eventIds.includes(existing.externalId || '')) {
                         if (existing.state !== 'cancelled') {
-                            await strapiAPI.updateReservation(existing.id, { state: 'cancelled' })
+                            await strapiAPI.updateReservation(existing.documentId, { state: 'cancelled' })
                         }
                     }
                 }
@@ -102,7 +108,6 @@ export async function GET(request: NextRequest) {
                 results.push({
                     cabinId,
                     cabinName,
-                    icalUrl,
                     success: true,
                     eventsFound: events.length,
                     created,
@@ -111,7 +116,8 @@ export async function GET(request: NextRequest) {
                 })
             } catch (error) {
                 results.push({
-                    icalUrl,
+                    cabinId: config.cabinId,
+                    cabinName: config.cabinName,
                     success: false,
                     error: error instanceof Error ? error.message : 'Error desconocido'
                 })
@@ -125,11 +131,11 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `Sincronización completada: ${successCount}/${totalCount} URLs procesadas`,
+            message: `Sincronización completada: ${successCount}/${totalCount} cabañas procesadas`,
             summary: {
                 totalCreated,
                 totalUpdated,
-                urlsProcessed: successCount
+                cabinsProcessed: successCount
             },
             timestamp: new Date().toISOString(),
             results

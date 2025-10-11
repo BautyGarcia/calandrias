@@ -1,6 +1,7 @@
 import { CabinsShowcase } from "@/components/CabinsShowcase"
 import Image from "next/image"
 import { Metadata } from "next"
+import { StrapiAPI } from "@/lib/strapi"
 
 export const metadata: Metadata = {
     title: "Nuestras Cabañas en Tandil | Alojamiento de Lujo en las Sierras",
@@ -32,7 +33,14 @@ export const metadata: Metadata = {
     },
 }
 
-export default function CabanasPage() {
+// Revalidar cada hora
+export const revalidate = 3600
+
+export default async function CabanasPage() {
+    // Fetch cabins from Strapi
+    const strapiApi = new StrapiAPI()
+    const cabins = await strapiApi.getCabins()
+
     return (
         <main className="flex min-h-screen flex-col">
             {/* Cabins Showcase con fondo estético */}
@@ -64,7 +72,7 @@ export default function CabanasPage() {
                 />
                 
                 <div className="container mx-auto px-4 relative z-10">
-                    <CabinsShowcase />
+                    <CabinsShowcase cabins={cabins} />
                 </div>
             </section>
         </main>

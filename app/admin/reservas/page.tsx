@@ -22,7 +22,6 @@ import {
     LogOut
 } from "lucide-react"
 import { LocalReservation } from '@/types'
-import { getCabinDisplayName } from '@/utils/cabins'
 
 interface ConflictDetection {
     id: string
@@ -552,7 +551,7 @@ export default function AdminReservas() {
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--brown-earth)]">
-                                                    {getCabinDisplayName(reservation.cabinId)}
+                                                    {reservation.cabinId}
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap">

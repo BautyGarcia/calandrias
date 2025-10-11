@@ -1,3 +1,9 @@
+/**
+ * @deprecated Este archivo está deprecated. Usar StrapiAPI.getCabins() en su lugar.
+ * Los datos de cabañas ahora se obtienen dinámicamente desde Strapi.
+ * Este archivo se mantiene temporalmente para compatibilidad durante la migración.
+ */
+
 // Tipo local para los datos de cabañas existentes
 export interface CabinFeature {
     icon: string; // String identifier for icon

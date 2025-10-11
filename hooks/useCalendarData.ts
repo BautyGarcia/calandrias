@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { CalendarEvent } from '@/types/calendar'
-import { convertICalToCalendarEvents, convertStrapiReservationsToCalendarEvents } from '@/utils/calendar'
-import { CALENDAR_CABINS } from '@/data/cabins-calendar'
+import { convertStrapiReservationsToCalendarEvents } from '@/utils/calendar'
 
 interface UseCalendarDataProps {
   icalUrl?: string
@@ -84,11 +83,10 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
         throw new Error(result.error || 'Error al procesar el iCal')
       }
 
-      const icalEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
-      
+      // Ya no parseamos iCal manualmente, todo viene de Strapi
       const strapiEvents = await loadStrapiReservations(cabinId)
       
-      const allEvents = [...icalEvents, ...strapiEvents]
+      const allEvents = strapiEvents
       
       setEvents(allEvents)
       setLastUpdated(new Date())
@@ -121,8 +119,8 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
         throw new Error(result.error || 'Error al procesar el iCal')
       }
 
-      const icalEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
-      setEvents(icalEvents)
+      // Ya no se usa esta función, todo viene de Strapi
+      setEvents([])
       setLastUpdated(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -174,7 +172,8 @@ export function useCalendarData({ icalUrl, autoLoad = false, cabinId }: UseCalen
         const result = await response.json()
 
         if (response.ok) {
-          icalEvents = convertICalToCalendarEvents(Object.values(result.events), CALENDAR_CABINS)
+          // Ya no parseamos iCal manualmente, todo viene de Strapi via sync
+          icalEvents = []
         }
       }
 

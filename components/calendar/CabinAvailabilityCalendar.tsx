@@ -31,7 +31,6 @@ const AVAILABILITY_COLORS = {
 export default function CabinAvailabilityCalendar({ cabinId, events, selectedRange, onRangeChange }: CabinAvailabilityCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [hoverDate, setHoverDate] = useState<Date | null>(null)
-
     // Generate calendar days for current month
     const monthStart = startOfMonth(currentMonth)
     const monthEnd = endOfMonth(currentMonth)

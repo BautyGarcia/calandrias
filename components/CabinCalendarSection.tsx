@@ -9,13 +9,11 @@ import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'
 import { useCalendarData } from '@/hooks/useCalendarData'
 import { useReservations } from '@/hooks/useReservations'
-import { CALENDAR_CABINS } from '@/data/cabins-calendar'
-import { Cabin } from '@/data/cabins'
+import { Cabin } from '@/types/cabin'
 import { ReservationFormData } from '@/types/reservation'
 import { ReservationPaymentAdapter } from '@/lib/adapters/reservation-payment-adapter'
 import { processReservationPaymentDirect } from '@/lib/actions/payment-actions'
-import { getCabinICalUrl } from '@/utils/cabins'
-// import { calculatePriceWithWeekdayDiscount, formatPrice as formatPriceUtil } from '@/utils/pricing'
+import { calculatePriceForDateRange, formatPrice } from '@/utils/pricing'
 
 
 interface CabinCalendarSectionProps {
@@ -55,17 +53,8 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
     }
   }, [loading, syncing, isAutoLoaded, events.length])
 
-  // Get the appropriate iCal URL for this cabin
-  const icalUrl = getCabinICalUrl(cabin.slug)
-
-  // Helper function to convert price string to number
-  const parsePrice = (priceString: string): number => {
-    return Number(priceString.replace(/,/g, ''))
-  }
-
-
-
   // Auto-load calendar data when component mounts
+  // Note: iCal URLs ahora se manejan en backend via Strapi
   useEffect(() => {
     if (!isAutoLoaded && !loading) {
       const loadData = async () => {
@@ -88,31 +77,23 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
       loadData()
     }
-  }, [isAutoLoaded, loading, cabin.slug, icalUrl, refreshEvents, refreshStrapiOnly])
+  }, [isAutoLoaded, loading, cabin.slug, refreshEvents, refreshStrapiOnly])
 
-  // Get the appropriate calendar cabin config
-  const calendarCabin = CALENDAR_CABINS.find(c =>
-    c.name.toLowerCase().includes(cabin.subtitle.toLowerCase().split(' ')[0]) ||
-    c.name.toLowerCase().includes(cabin.name.toLowerCase())
-  ) || CALENDAR_CABINS[0]
+  // Usar directamente el slug de Strapi como cabinId para que coincida con los eventos
+  const cabinIdForCalendar = cabin.slug
 
-  // Calculate nights and pricing with weekday discount - Temporalmente comentado
-  // const nights = selectedRange.from && selectedRange.to
-  //   ? Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24))
-  //   : 0 // No default value when no dates selected
-
-  const pricePerNight = parsePrice(cabin.price)
+  // Calculate pricing with weekday discount and monthly overrides
+  const pricingBreakdown = selectedRange.from && selectedRange.to
+    ? calculatePriceForDateRange(cabin, selectedRange.from, selectedRange.to)
+    : null
   
-  // Calculate pricing with weekday discount - Temporalmente comentado
-  // const pricingBreakdown = selectedRange.from && selectedRange.to
-  //   ? calculatePriceWithWeekdayDiscount(pricePerNight, selectedRange.from, selectedRange.to)
-  //   : null
-  
-  // const basePrice = pricingBreakdown?.basePrice || 0
-  const totalPrice = pricePerNight // Simplified for payment calculation
+  const nights = pricingBreakdown?.totalNights || 0
+  const totalPrice = pricingBreakdown?.finalPrice || 0
+  const basePrice = pricingBreakdown?.basePrice || 0
+  const pricePerNight = pricingBreakdown?.averagePricePerNight || cabin.precio_base_noche
 
-  // Check if dates are selected for price display - Temporalmente comentado
-  // const hasSelectedDates = selectedRange.from && selectedRange.to
+  // Check if dates are selected for price display
+  const hasSelectedDates = selectedRange.from && selectedRange.to
 
   // Handle reservation form submission
   // Siguiendo SRP: solo orquestación, delegando responsabilidades al adaptador
@@ -160,12 +141,6 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       throw error;
     }
   }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, pricePerNight, refreshStrapiOnly])
-
-  // const handleReserveClick = useCallback(() => {
-  //   if (selectedRange.from && selectedRange.to) {
-  //     setCurrentStep('form')
-  //   }
-  // }, [selectedRange.from, selectedRange.to])
 
   const handleBackToCalendar = useCallback(() => {
     // Actualizar reservas de Strapi antes de volver para mostrar cambios recientes
@@ -234,7 +209,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       </div>
                     ) : (
                       <CabinAvailabilityCalendar
-                        cabinId={calendarCabin.id}
+                        cabinId={cabinIdForCalendar}
                         events={events}
                         selectedRange={selectedRange}
                         onRangeChange={setSelectedRange}
@@ -271,33 +246,33 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       </div>
                     </div>
 
-                    {/* Price Estimate - Temporalmente comentado
+                    {/* Price Estimate */}
                     <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
                       <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
 
                       {hasSelectedDates && pricingBreakdown ? (
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
-                            <span className="text-[var(--dark-wood)]">{formatPriceUtil(basePrice)}</span>
+                            <span className="text-[var(--slate-gray)]">{formatPrice(pricePerNight)} x {nights} {nights === 1 ? 'noche' : 'noches'}</span>
+                            <span className="text-[var(--dark-wood)]">{formatPrice(basePrice)}</span>
                           </div>
                           
                           {pricingBreakdown.hasDiscount && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-green-600">Descuento días de semana (15%)</span>
-                              <span className="text-green-600">-{formatPriceUtil(pricingBreakdown.weekdayDiscount)}</span>
+                              <span className="text-green-600">Descuento días de semana</span>
+                              <span className="text-green-600">-{formatPrice(pricingBreakdown.weekdayDiscount)}</span>
                             </div>
                           )}
                           
                           <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                             <div className="flex justify-between font-medium">
                               <span className="text-[var(--brown-earth)]">Total</span>
-                              <span className="text-[var(--brown-earth)]">{formatPriceUtil(totalPrice)}</span>
+                              <span className="text-[var(--brown-earth)]">{formatPrice(totalPrice)}</span>
                             </div>
                             
                             {pricingBreakdown.hasDiscount && (
                               <p className="text-xs text-green-600 text-right mt-1">
-                                ¡Ahorrás {formatPriceUtil(pricingBreakdown.weekdayDiscount)}!
+                                ¡Ahorrás {formatPrice(pricingBreakdown.weekdayDiscount)}!
                               </p>
                             )}
                           </div>
@@ -308,23 +283,22 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                         </p>
                       )}
                     </div>
-                    */}
 
                     {/* Reserve Button */}
                     <Button
                       variant="wood"
                       size="lg"
-                      className="w-full font-medium opacity-50 cursor-not-allowed"
-                      disabled={true}
-                      onClick={() => {}}
+                      className="w-full font-medium"
+                      disabled={!selectedRange.from || !selectedRange.to}
+                      onClick={() => setCurrentStep('form')}
                     >
                       <DollarSign className="h-4 w-4 mr-2" />
-                      Reservas temporalmente deshabilitadas
+                      Continuar con la Reserva
                     </Button>
 
                     {(!selectedRange.from || !selectedRange.to) && (
                       <p className="text-xs text-[var(--slate-gray)] text-center">
-                        Selecciona fechas para activar la reserva
+                        Selecciona fechas para continuar
                       </p>
                     )}
                   </CardContent>
@@ -340,8 +314,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                   onSubmit={handleReservationSubmit}
                   onCalendarRefresh={refreshStrapiOnly}
                   isLoading={isSubmittingReservation}
-                  maxGuests={cabin.detailed_capacity.max_guests}
-                  temporarilyDisabled={true}
+                  maxGuests={parseInt(cabin.capacity)}
                 />
               </div>
 
@@ -361,34 +334,33 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
                     <SelectedDateRange selectedRange={selectedRange} />
 
-                    {/* Precios temporalmente comentados 
+                    {/* Price Breakdown */}
                     <div className="space-y-2 pt-4 border-t border-[var(--beige-arena)]">
                       <div className="flex justify-between text-sm">
-                        <span className="text-[var(--slate-gray)]">${cabin.price} x {nights} noches</span>
-                        <span className="text-[var(--dark-wood)]">{formatPriceUtil(basePrice)}</span>
+                        <span className="text-[var(--slate-gray)]">{formatPrice(pricePerNight)} x {nights} {nights === 1 ? 'noche' : 'noches'}</span>
+                        <span className="text-[var(--dark-wood)]">{formatPrice(basePrice)}</span>
                       </div>
                       
                       {pricingBreakdown?.hasDiscount && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-green-600">Descuento días de semana (15%)</span>
-                          <span className="text-green-600">-{formatPriceUtil(pricingBreakdown.weekdayDiscount)}</span>
+                          <span className="text-green-600">Descuento días de semana</span>
+                          <span className="text-green-600">-{formatPrice(pricingBreakdown.weekdayDiscount)}</span>
                         </div>
                       )}
                       
                       <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
                         <div className="flex justify-between font-medium text-lg">
                           <span className="text-[var(--brown-earth)]">Total</span>
-                          <span className="text-[var(--brown-earth)]">{formatPriceUtil(totalPrice)}</span>
+                          <span className="text-[var(--brown-earth)]">{formatPrice(totalPrice)}</span>
                         </div>
                         
                         {pricingBreakdown?.hasDiscount && (
                           <p className="text-xs text-green-600 text-right mt-1">
-                            ¡Ahorrás {formatPriceUtil(pricingBreakdown.weekdayDiscount)}!
+                            ¡Ahorrás {formatPrice(pricingBreakdown.weekdayDiscount)}!
                           </p>
                         )}
                       </div>
                     </div>
-                    */}
 
                     <Button
                       variant="outline"

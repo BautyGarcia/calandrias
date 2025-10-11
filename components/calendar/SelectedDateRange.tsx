@@ -35,7 +35,7 @@ export default function SelectedDateRange({ selectedRange }: SelectedDateRangePr
                         </div>
                         <div className="text-base text-[var(--slate-gray)] mt-3 font-normal">
                             <span className="bg-[var(--light-sand)] px-3 py-1 rounded">
-                                {Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24))} noches
+                                {Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24))} {Math.ceil((selectedRange.to.getTime() - selectedRange.from.getTime()) / (1000 * 60 * 60 * 24)) === 1 ? 'noche' : 'noches'}
                             </span>
                         </div>
                     </>

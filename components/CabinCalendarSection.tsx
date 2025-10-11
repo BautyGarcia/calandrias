@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign } from "lucide-react"
+import { AlertCircle, Calendar, Loader2, CalendarDays, Users } from "lucide-react"
 import CabinAvailabilityCalendar, { DateRange } from '@/components/calendar/CabinAvailabilityCalendar'
 import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'
@@ -94,7 +94,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
   // Check if dates are selected for price display
   const hasSelectedDates = selectedRange.from && selectedRange.to
-
+  console.log(hasSelectedDates)
   // Handle reservation form submission
   // Siguiendo SRP: solo orquestación, delegando responsabilidades al adaptador
   const handleReservationSubmit = useCallback(async (formData: ReservationFormData): Promise<void> => {
@@ -248,8 +248,9 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
                     {/* Price Estimate */}
                     <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
+                      {/* Temporalmente oculto */}
+                      {/*
                       <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
-
                       {hasSelectedDates && pricingBreakdown ? (
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
@@ -282,6 +283,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                           Selecciona fechas para ver el estimado de precios.
                         </p>
                       )}
+                      */}
                     </div>
 
                     {/* Reserve Button */}
@@ -289,16 +291,17 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       variant="wood"
                       size="lg"
                       className="w-full font-medium"
-                      disabled={!selectedRange.from || !selectedRange.to}
+                      disabled={!selectedRange.from || !selectedRange.to || true}
                       onClick={() => setCurrentStep('form')}
                     >
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Continuar con la Reserva
+                      {/* <DollarSign className="h-4 w-4 mr-2" />
+                      Continuar con la Reserva */}
+                      Contactar por WhatsApp para reservar
                     </Button>
 
                     {(!selectedRange.from || !selectedRange.to) && (
                       <p className="text-xs text-[var(--slate-gray)] text-center">
-                        Selecciona fechas para continuar
+                        {/* Selecciona fechas para continuar */}
                       </p>
                     )}
                   </CardContent>

@@ -11,7 +11,7 @@ import {
     Heart
 } from "lucide-react"
 import { Cabin } from "@/types/cabin"
-import { getMinimumPrice, formatPrice } from "@/utils/pricing"
+import { getMinimumPrice } from "@/utils/pricing"
 
 interface CabinsShowcaseProps {
     cabins: Cabin[]
@@ -42,7 +42,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {cabins.map((cabin, index) => {
                     const minPrice = getMinimumPrice(cabin)
-                    
+                    console.log(minPrice)
                     return (
                         <Link 
                             key={cabin.id}
@@ -147,7 +147,8 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                                     {/* Pricing y CTA mejorado */}
                                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--light-sand)]">
                                         {/* Precio dinámico "desde: $X" */}
-                                        <div>
+                                        {/* Temporalmente oculto */}
+{/*                                         <div>
                                             <span className="text-xs text-[var(--slate-gray)]">desde</span>
                                             <div className="flex items-baseline gap-1">
                                                 <span className="text-2xl font-bold text-[var(--brown-earth)]">
@@ -161,7 +162,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                                             <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                             </svg>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </CardContent>
                             </Card>

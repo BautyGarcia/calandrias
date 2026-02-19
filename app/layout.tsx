@@ -101,6 +101,17 @@ export default function RootLayout({
         <GoogleTagManager />
         <Header />
         {children}
+        <footer className="py-3 text-center text-xs text-gray-400">
+          Desarrollado por{" "}
+          <a
+            href="https://bautygarcia.com/es"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-600 transition-colors underline underline-offset-2"
+          >
+            Bauty Garcia
+          </a>
+        </footer>
       </body>
     </html>
   );

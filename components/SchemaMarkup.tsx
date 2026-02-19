@@ -156,7 +156,7 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
         "url": `https://las-calandrias.com/cabanas/${cabin.slug}`,
         "priceRange": formattedPrice,
         "numberOfRooms": cabin.bedrooms,
-        "petsAllowed": cabin.amenities.pets_allowed,
+        "petsAllowed": true,
         "amenityFeature": cabin.features.map(feature => ({
             "@type": "LocationFeatureSpecification",
             "name": feature.label,

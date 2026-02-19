@@ -146,12 +146,10 @@ export default async function CabinPage({ params }: PageProps) {
                                         <MapPin className="h-4 w-4" />
                                         <span>Tandil, Buenos Aires</span>
                                     </div>
-                                    {cabin.amenities.pets_allowed && (
-                                        <div className="flex items-center gap-1 bg-[var(--green-moss)]/80 backdrop-blur-sm rounded-full px-3 py-1">
-                                            <Heart className="h-4 w-4" />
-                                            <span className="text-sm">Pet-friendly</span>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1 bg-[var(--green-moss)]/80 backdrop-blur-sm rounded-full px-3 py-1">
+                                        <Heart className="h-4 w-4" />
+                                        <span className="text-sm">Pet-friendly</span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">

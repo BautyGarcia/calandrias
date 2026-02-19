@@ -33,7 +33,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                     Nuestras Cabañas en Tandil
                 </h1>
                 <p className="text-xl text-[var(--slate-gray)] max-w-3xl mx-auto leading-relaxed">
-                    Espacios únicos diseñados para tu descanso perfecto en las sierras de Buenos Aires. 
+                    Espacios únicos diseñados para tu descanso perfecto en las sierras de Buenos Aires.
                     Cada cabaña cuenta una historia diferente en el corazón de la naturaleza.
                 </p>
             </div>
@@ -44,7 +44,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                     const minPrice = getMinimumPrice(cabin)
                     console.log(minPrice)
                     return (
-                        <Link 
+                        <Link
                             key={cabin.id}
                             href={`/cabanas/${cabin.slug}`}
                             className="block group"
@@ -60,10 +60,10 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                                         fill
                                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
-                                    
+
                                     {/* Overlay para mejorar legibilidad de badges */}
                                     <div className="absolute inset-0 bg-black/20" />
-                                    
+
                                     {/* Rating badge mejorado */}
                                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1">
                                         <Star className="h-3 w-3 fill-[var(--beige-arena)] text-[var(--beige-arena)]" />
@@ -76,12 +76,11 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                                     </div>
 
                                     {/* Badge de mascotas si está permitido */}
-                                    {cabin.amenities.pets_allowed && (
-                                        <div className="absolute bottom-4 left-4 bg-[var(--green-moss)]/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1">
-                                            <Heart className="h-3 w-3 text-white" />
-                                            <span className="text-xs font-medium text-white">Pet-friendly</span>
-                                        </div>
-                                    )}
+
+                                    <div className="absolute bottom-4 left-4 bg-[var(--green-moss)]/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1">
+                                        <Heart className="h-3 w-3 text-white" />
+                                        <span className="text-xs font-medium text-white">Pet-friendly</span>
+                                    </div>
                                 </div>
 
                                 <CardContent className="p-6 flex flex-col flex-1">
@@ -148,7 +147,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--light-sand)]">
                                         {/* Precio dinámico "desde: $X" */}
                                         {/* Temporalmente oculto */}
-{/*                                         <div>
+                                        {/*                                         <div>
                                             <span className="text-xs text-[var(--slate-gray)]">desde</span>
                                             <div className="flex items-baseline gap-1">
                                                 <span className="text-2xl font-bold text-[var(--brown-earth)]">
@@ -178,7 +177,7 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                         ¿Necesitas ayuda para planificar tu estadía?
                     </h3>
                     <p className="text-[var(--slate-gray)] text-lg leading-relaxed">
-                        Nuestro equipo local te puede recomendar las mejores actividades en Tandil, 
+                        Nuestro equipo local te puede recomendar las mejores actividades en Tandil,
                         restaurantes y todo lo que necesitás para una experiencia perfecta.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">

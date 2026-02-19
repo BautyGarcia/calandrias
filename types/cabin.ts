@@ -36,24 +36,11 @@ export interface CabinFeature {
   label: string;
 }
 
-export interface CabinCapacity {
-  id: number;
-  max_guests: number;
-  bedrooms: number;
-  bathrooms: number;
-}
-
 export interface CabinAmenities {
   id: number;
   kitchen: boolean;
-  linens: boolean;
-  wood_stove: boolean;
   air_conditioning: string;
   pool_shared: boolean;
-  garden: boolean;
-  barbecue: boolean;
-  game_zone: boolean;
-  pets_allowed: boolean;
 }
 
 export interface CabinRating {
@@ -98,7 +85,6 @@ export interface Cabin {
   thumbnail: StrapiMedia;
   features: CabinFeature[];
   highlights: string[];
-  detailed_capacity: CabinCapacity;
   amenities: CabinAmenities;
   rating: CabinRating;
   nearby_attractions: string[];

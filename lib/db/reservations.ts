@@ -208,7 +208,11 @@ export async function getReservationByMpPaymentId(mpPaymentId: string): Promise<
 }
 
 // Crea una reserva. La constraint `no_overlap` (código Postgres 23P01) se
-// traduce a Error('DATE_CONFLICT') para que las rutas respondan 409.
+// traduce a Error('DATE_CONFLICT') para que las rutas respondan 409. La
+// violación del índice único parcial sobre `mp_payment_id` (código Postgres
+// 23505, unique_violation) se traduce a Error('DUPLICATE_MP_PAYMENT'): es el
+// backstop de idempotencia del webhook (dos notificaciones aprobadas del mismo
+// pago no pueden generar dos reservas), y el webhook lo trata como "ya procesado".
 export async function createReservation(input: ReservationInput): Promise<Reservation> {
     const supabase = createAdminClient()
     const { data, error } = await supabase
@@ -219,6 +223,7 @@ export async function createReservation(input: ReservationInput): Promise<Reserv
 
     if (error) {
         if (error.code === '23P01') throw new Error('DATE_CONFLICT')
+        if (error.code === '23505') throw new Error('DUPLICATE_MP_PAYMENT')
         throw new Error(`Error creando reserva: ${error.message}`)
     }
     return rowToReservation(data as ReservationRow)

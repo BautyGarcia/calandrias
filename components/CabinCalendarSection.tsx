@@ -8,7 +8,6 @@ import CabinAvailabilityCalendar, { DateRange } from '@/components/calendar/Cabi
 import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'
 import { useCalendarData } from '@/hooks/useCalendarData'
-import { useReservations } from '@/hooks/useReservations'
 import { Cabin } from '@/types/cabin'
 import { ReservationFormData } from '@/types/reservation'
 import { ReservationPaymentAdapter } from '@/lib/adapters/reservation-payment-adapter'
@@ -24,7 +23,7 @@ interface CabinCalendarSectionProps {
 
 export default function CabinCalendarSection({ cabin, bookingsEnabled, whatsapp }: CabinCalendarSectionProps) {
   const { events, loading, error, syncing, refreshAvailabilityOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
-  const { isLoading: isSubmittingReservation } = useReservations()
+  const [isSubmittingReservation, setIsSubmittingReservation] = useState(false)
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
   const [currentStep, setCurrentStep] = useState<'calendar' | 'form'>('calendar')
@@ -104,6 +103,7 @@ export default function CabinCalendarSection({ cabin, bookingsEnabled, whatsapp 
       throw new Error('Fechas no seleccionadas')
     }
 
+    setIsSubmittingReservation(true)
     try {
       // Validar datos antes del procesamiento (principio de fail-fast)
       const validationErrors = ReservationPaymentAdapter.validateFormDataForPayment(formData);
@@ -135,6 +135,9 @@ export default function CabinCalendarSection({ cabin, bookingsEnabled, whatsapp 
 
     } catch (error) {
       console.error('Error submitting reservation for payment:', error);
+
+      // En error (no en el redirect exitoso) rehabilitar el submit.
+      setIsSubmittingReservation(false)
 
       // Refrescar en caso de error para mostrar conflictos actualizados
       await refreshAvailabilityOnly();

@@ -41,20 +41,15 @@ function generateICalEvent(reservation: LocalReservation): string[] {
     const dtstart = formatICalDate(reservation.checkIn, true)
     const dtend = formatICalDate(reservation.checkOut, true)
 
-    // Summary basado en la fuente de la reserva
-    let summary = ''
-    if (reservation.source === 'airbnb') {
-        summary = `Airbnb - ${reservation.guestName || 'Reserva'}`
-    } else if (reservation.source === 'direct') {
-        summary = `Reserva Directa - ${reservation.guestName}`
-    } else {
-        summary = `Bloqueado - ${reservation.guestName || 'No disponible'}`
-    }
+    // Este feed (.ics) es PÚBLICO y no autenticado: sólo debe exponer que las
+    // fechas están ocupadas para que un OTA (Airbnb) las importe y bloquee.
+    // NUNCA debe filtrar identidad del huésped, código de reserva ni precio.
+    // Por eso el SUMMARY es genérico y el DESCRIPTION sólo lleva ocupación
+    // (cantidad de huéspedes/mascotas), sin nombre, sin código y sin precio.
+    const summary = 'No disponible'
 
-    let description = `Reserva para ${reservation.guests} huéspedes`
+    let description = `Ocupado - ${reservation.guests} huéspedes`
     if (reservation.pets > 0) description += `, ${reservation.pets} mascotas`
-    if (reservation.reservationCode) description += `\nCódigo: ${reservation.reservationCode}`
-    if (reservation.totalPrice) description += `\nPrecio: $${reservation.totalPrice}`
 
     return [
         'BEGIN:VEVENT',

@@ -126,6 +126,25 @@ export async function POST(request: NextRequest) {
                     // La constraint de solapamiento traduce el conflicto a Error('DATE_CONFLICT').
                     createdReservation = await createReservation(reservationInput);
                 } catch (createError) {
+                    // 🔁 IDEMPOTENCIA (backstop DB): el índice único parcial sobre
+                    // `mp_payment_id` traduce el choque a Error('DUPLICATE_MP_PAYMENT').
+                    // Dos webhooks aprobados simultáneos pueden pasar el check-then-insert
+                    // de arriba; el que pierde la carrera cae acá. Tratar como ya procesado:
+                    // sin reinsertar, sin segundo email, 200.
+                    if (createError instanceof Error && createError.message === 'DUPLICATE_MP_PAYMENT') {
+                        console.log('✅ pago ya procesado (índice único mp_payment_id), notificación ignorada:', {
+                            paymentId: paymentData.id,
+                        });
+                        return NextResponse.json(
+                            {
+                                status: 'already_processed',
+                                paymentStatus: 'approved',
+                                paymentId: paymentData.id,
+                            },
+                            { status: 200 }
+                        );
+                    }
+
                     const isConflict = createError instanceof Error && createError.message === 'DATE_CONFLICT';
 
                     if (!isConflict) {
@@ -150,6 +169,23 @@ export async function POST(request: NextRequest) {
                             paymentId: paymentData.id,
                         });
                     } catch (fallbackError) {
+                        // El fallback también puede chocar con el índice único de
+                        // `mp_payment_id` si otro webhook del mismo pago ganó la carrera:
+                        // igualmente es "ya procesado", no un pago perdido.
+                        if (fallbackError instanceof Error && fallbackError.message === 'DUPLICATE_MP_PAYMENT') {
+                            console.log('✅ pago ya procesado (índice único mp_payment_id) durante fallback, notificación ignorada:', {
+                                paymentId: paymentData.id,
+                            });
+                            return NextResponse.json(
+                                {
+                                    status: 'already_processed',
+                                    paymentStatus: 'approved',
+                                    paymentId: paymentData.id,
+                                },
+                                { status: 200 }
+                            );
+                        }
+
                         // Si hasta el fallback pendiente falla, logueamos fuerte y devolvemos 200.
                         // Un 500 haría que MP reintente indefinidamente; el pago igual es
                         // recuperable desde el dashboard de MercadoPago con este paymentId.

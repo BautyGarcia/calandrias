@@ -1,45 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import {
     checkDateAvailability,
     createReservation,
     generateReservationCode,
 } from '@/lib/db/reservations'
+import { getCabinBySlug } from '@/lib/db/cabins'
 import { getSiteSettings } from '@/lib/db/content'
+import { PublicReservationSchema } from '@/lib/reservations/public-input'
+import { calculatePriceForDateRange } from '@/utils/pricing'
 import type { ReservationInput } from '@/types/db'
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-
-// Validación de la reserva pública (fechas YYYY-MM-DD, checkOut > checkIn).
-const CreateReservationSchema = z
-    .object({
-        cabinId: z.string().min(1, 'cabinId requerido'),
-        checkIn: z.string().regex(DATE_RE, 'checkIn debe tener formato YYYY-MM-DD'),
-        checkOut: z.string().regex(DATE_RE, 'checkOut debe tener formato YYYY-MM-DD'),
-        guestName: z.string().min(2, 'Nombre requerido'),
-        guestEmail: z.string().email('Email inválido'),
-        guestPhone: z.string().optional(),
-        guests: z.number().int().min(1, 'Mínimo 1 huésped'),
-        pets: z.number().int().min(0, 'pets no puede ser negativo').default(0),
-        state: z.enum(['confirmed', 'pending', 'cancelled', 'blocked']).optional(),
-        source: z.enum(['airbnb', 'direct', 'manual']).optional(),
-        externalId: z.string().optional(),
-        reservationCode: z.string().optional(),
-        totalPrice: z.number().optional(),
-        currency: z.string().optional(),
-        specialRequests: z.string().optional(),
-    })
-    .refine((data) => data.checkOut > data.checkIn, {
-        message: 'checkOut debe ser posterior a checkIn',
-        path: ['checkOut'],
-    })
+// Parsea un string YYYY-MM-DD a un Date local (sin corrimiento de día por UTC),
+// igual que `createDateFromString` de utils/calendar.ts (construcción de 3 args).
+function createLocalDate(dateString: string): Date {
+    const [year, month, day] = dateString.split('-').map(Number)
+    return new Date(year, month - 1, day)
+}
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
 
-        // 1. Validación de esquema
-        const parsed = CreateReservationSchema.safeParse(body)
+        // 1. Validación de esquema (endurecido: sólo campos del huésped, .strict()).
+        const parsed = PublicReservationSchema.safeParse(body)
         if (!parsed.success) {
             return NextResponse.json(
                 { error: 'Datos de reserva inválidos', details: parsed.error.flatten() },
@@ -48,7 +31,7 @@ export async function POST(request: NextRequest) {
         }
         const data = parsed.data
 
-        // 2. Gating de reservas online
+        // 2. Gating de reservas online (SIEMPRE antes del cálculo de precio).
         const settings = await getSiteSettings()
         if (!settings.bookingsEnabled) {
             return NextResponse.json(
@@ -57,7 +40,17 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 3. Revalidar disponibilidad
+        // 3. Resolver la cabaña y calcular el precio en el servidor (nunca del cliente).
+        const cabin = await getCabinBySlug(data.cabinId)
+        if (!cabin) {
+            return NextResponse.json({ error: 'Cabaña no encontrada' }, { status: 404 })
+        }
+
+        const checkInDate = createLocalDate(data.checkIn)
+        const checkOutDate = createLocalDate(data.checkOut)
+        const pricing = calculatePriceForDateRange(cabin, checkInDate, checkOutDate)
+
+        // 4. Revalidar disponibilidad
         const availability = await checkDateAvailability(data.cabinId, data.checkIn, data.checkOut)
         if (!availability.isAvailable) {
             return NextResponse.json(
@@ -66,7 +59,8 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 4. Crear reserva
+        // 5. Crear reserva. El servidor fija state/source/currency/reservationCode
+        //    y el precio total calculado; el cliente no puede influir en ellos.
         const input: ReservationInput = {
             cabinId: data.cabinId,
             checkIn: data.checkIn,
@@ -76,12 +70,11 @@ export async function POST(request: NextRequest) {
             guestPhone: data.guestPhone,
             guests: data.guests,
             pets: data.pets,
-            state: data.state ?? 'confirmed',
-            source: data.source ?? 'direct',
-            externalId: data.externalId,
-            reservationCode: data.reservationCode ?? generateReservationCode(),
-            totalPrice: data.totalPrice,
-            currency: data.currency ?? 'ARS',
+            state: 'pending',
+            source: 'direct',
+            reservationCode: generateReservationCode(),
+            totalPrice: pricing.finalPrice,
+            currency: 'ARS',
             specialRequests: data.specialRequests,
         }
 

@@ -192,6 +192,21 @@ export async function checkDateAvailability(
     return { isAvailable: conflicts.length === 0, conflictingReservations: conflicts }
 }
 
+// Busca una reserva por el id de pago de MercadoPago. Sirve de guard de
+// idempotencia en el webhook: MP entrega múltiples notificaciones por pago.
+export async function getReservationByMpPaymentId(mpPaymentId: string): Promise<Reservation | null> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('mp_payment_id', mpPaymentId)
+        .limit(1)
+
+    if (error) throw new Error(`Error obteniendo reserva por pago: ${error.message}`)
+    const rows = data as ReservationRow[]
+    return rows.length > 0 ? rowToReservation(rows[0]) : null
+}
+
 // Crea una reserva. La constraint `no_overlap` (código Postgres 23P01) se
 // traduce a Error('DATE_CONFLICT') para que las rutas respondan 409.
 export async function createReservation(input: ReservationInput): Promise<Reservation> {

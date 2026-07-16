@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { paymentApi } from '@/lib/mercadopago'
-import { createReservation, generateReservationCode } from '@/lib/db/reservations'
+import { createReservation, generateReservationCode, getReservationByMpPaymentId } from '@/lib/db/reservations'
 import { metadataToReservationInput } from '@/lib/payments/metadata'
 import { EmailService } from '@/lib/email-service'
 import { ReservationConfirmationData } from '@/emails/templates/ReservationConfirmation'
@@ -86,6 +86,28 @@ export async function POST(request: NextRequest) {
 
         switch (paymentData.status) {
             case 'approved': {
+                // 🔁 IDEMPOTENCIA: MP entrega varias notificaciones por pago
+                // (created→approved + reintentos). Si este pago ya generó una
+                // reserva, no reinsertar: un segundo INSERT chocaría con la
+                // constraint no_overlap → DATE_CONFLICT → fallback pendiente
+                // fantasma. Cortamos acá: sin insert y sin email.
+                const alreadyProcessed = await getReservationByMpPaymentId(String(paymentData.id));
+                if (alreadyProcessed) {
+                    console.log('✅ pago ya procesado, notificación ignorada:', {
+                        reservationId: alreadyProcessed.id,
+                        paymentId: paymentData.id,
+                    });
+                    return NextResponse.json(
+                        {
+                            status: 'already_processed',
+                            reservationId: alreadyProcessed.id,
+                            paymentStatus: 'approved',
+                            paymentId: paymentData.id,
+                        },
+                        { status: 200 }
+                    );
+                }
+
                 // Construir la reserva confirmada a partir del metadata + datos del pago.
                 const reservationInput: ReservationInput = metadataToReservationInput(metadata, {
                     paymentId: paymentData.id,

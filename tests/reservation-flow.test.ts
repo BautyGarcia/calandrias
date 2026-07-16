@@ -3,6 +3,7 @@ import {
     buildPreferenceMetadata,
     metadataToReservationInput,
 } from '@/lib/payments/metadata'
+import { parsePublicReservationInput } from '@/lib/reservations/public-input'
 import type { ReservationPaymentData } from '@/types/payment'
 
 // ---------------------------------------------------------------
@@ -130,5 +131,75 @@ describe('metadataToReservationInput', () => {
         })
         expect(input.guests).toBe(1)
         expect(input.pets).toBe(0)
+    })
+})
+
+// ---------------------------------------------------------------
+// parsePublicReservationInput: schema público endurecido (.strict()).
+// Sólo acepta campos controlables por el huésped; el servidor decide
+// state/source/currency/reservationCode/totalPrice.
+// ---------------------------------------------------------------
+describe('parsePublicReservationInput', () => {
+    const validBody = {
+        cabinId: 'refugio-intimo',
+        checkIn: '2026-08-10',
+        checkOut: '2026-08-13',
+        guestName: 'Juan Pérez',
+        guestEmail: 'juan@example.com',
+        guestPhone: '+5492494000000',
+        guests: 2,
+        pets: 1,
+        specialRequests: 'Llego tarde',
+    }
+
+    it('acepta un body mínimo válido', () => {
+        const result = parsePublicReservationInput({
+            cabinId: 'refugio-intimo',
+            checkIn: '2026-08-10',
+            checkOut: '2026-08-13',
+            guestName: 'Juan Pérez',
+            guestEmail: 'juan@example.com',
+            guests: 1,
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('el output parseado sólo contiene los campos permitidos', () => {
+        const result = parsePublicReservationInput(validBody)
+        expect(result.success).toBe(true)
+        if (!result.success) return
+        expect(Object.keys(result.data).sort()).toEqual(
+            [
+                'cabinId',
+                'checkIn',
+                'checkOut',
+                'guestEmail',
+                'guestName',
+                'guestPhone',
+                'guests',
+                'pets',
+                'specialRequests',
+            ].sort(),
+        )
+    })
+
+    it('rechaza state (clave no permitida por .strict())', () => {
+        const result = parsePublicReservationInput({ ...validBody, state: 'confirmed' })
+        expect(result.success).toBe(false)
+    })
+
+    it('rechaza totalPrice (clave no permitida por .strict())', () => {
+        const result = parsePublicReservationInput({ ...validBody, totalPrice: 0 })
+        expect(result.success).toBe(false)
+    })
+
+    it('rechaza claves desconocidas arbitrarias', () => {
+        const result = parsePublicReservationInput({ ...validBody, source: 'manual', currency: 'USD' })
+        expect(result.success).toBe(false)
+    })
+
+    it('rechaza checkOut anterior o igual a checkIn', () => {
+        const result = parsePublicReservationInput({ ...validBody, checkOut: '2026-08-10' })
+        expect(result.success).toBe(false)
     })
 })

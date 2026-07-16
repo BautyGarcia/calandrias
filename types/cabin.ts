@@ -1,22 +1,7 @@
-// Types para Strapi Media
-export interface StrapiMedia {
-  id: number;
-  name: string;
-  alternativeText: string | null;
-  caption: string | null;
-  width: number;
-  height: number;
-  formats: any;
-  hash: string;
-  ext: string;
-  mime: string;
-  size: number;
+// Imagen mínima: sólo lo que la app consume (antes StrapiMedia)
+export interface CabinImage {
   url: string;
-  previewUrl: string | null;
-  provider: string;
-  provider_metadata: any | null;
-  createdAt: string;
-  updatedAt: string;
+  alternativeText?: string | null;
 }
 
 // Iconos disponibles para features
@@ -81,8 +66,8 @@ export interface Cabin {
   capacity: string;
   bedrooms: string;
   bathrooms: string;
-  image: StrapiMedia;
-  thumbnail: StrapiMedia;
+  image: CabinImage;
+  thumbnail: CabinImage;
   features: CabinFeature[];
   highlights: string[];
   amenities: CabinAmenities;

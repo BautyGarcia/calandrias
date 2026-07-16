@@ -2,6 +2,13 @@ import { Text, Section, Button } from '@react-email/components'
 import EmailLayout from '../components/EmailLayout'
 import { formatDate, formatPrice, calculateNights } from '../utils/emailHelpers'
 
+// Defaults hardcodeados usados como fallback si no se pasan los datos de contacto.
+const DEFAULT_WHATSAPP = '5492494027920'
+const DEFAULT_ADDRESS = 'Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires'
+const DEFAULT_EMAIL = 'Lascalandrias123@gmail.com'
+const DEFAULT_CHECKIN = '15:00'
+const DEFAULT_CHECKOUT = '11:00'
+
 export interface ReservationConfirmationData {
   guestName: string
   guestEmail: string
@@ -12,6 +19,12 @@ export interface ReservationConfirmationData {
   reservationCode: string
   paymentId?: string // Opcional, no lo mostramos
   pricePerNight?: number // Ya no se usa para recalcular; se conserva por compatibilidad
+  // Datos de contacto editables (site_settings); opcionales con fallback.
+  whatsapp?: string
+  email?: string
+  address?: string
+  checkinTime?: string
+  checkoutTime?: string
 }
 
 interface ReservationConfirmationProps {
@@ -22,8 +35,17 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
   // Se muestra el total recibido y la cantidad de noches, sin recalcular precios.
   const nights = calculateNights(data.checkIn, data.checkOut)
 
+  const whatsapp = data.whatsapp || DEFAULT_WHATSAPP
+  const email = data.email || DEFAULT_EMAIL
+  const address = data.address || DEFAULT_ADDRESS
+  const checkinTime = data.checkinTime || DEFAULT_CHECKIN
+  const checkoutTime = data.checkoutTime || DEFAULT_CHECKOUT
+
   return (
-    <EmailLayout preview={`Confirmación de reserva ${data.reservationCode} - ${data.cabinName}`}>
+    <EmailLayout
+      preview={`Confirmación de reserva ${data.reservationCode} - ${data.cabinName}`}
+      contact={{ whatsapp, email, address }}
+    >
       {/* Saludo personal */}
       <Section className="mb-8">
         <Text className="text-2xl font-bold text-brown-earth font-serif m-0 mb-4">
@@ -76,17 +98,17 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
         </Text>
         <Section className="mb-3">
           <Text className="text-sm text-slate-gray m-0">
-            <strong>Check-in:</strong> A partir de las 15:00 hs
+            <strong>Check-in:</strong> A partir de las {checkinTime} hs
           </Text>
         </Section>
         <Section className="mb-3">
           <Text className="text-sm text-slate-gray m-0">
-            <strong>Check-out:</strong> Hasta las 11:00 hs
+            <strong>Check-out:</strong> Hasta las {checkoutTime} hs
           </Text>
         </Section>
         <Section className="mb-0">
           <Text className="text-sm text-slate-gray m-0">
-            <strong>Ubicación:</strong> Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires
+            <strong>Ubicación:</strong> {address}
           </Text>
         </Section>
       </Section>
@@ -97,7 +119,7 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
           ¿Consultas sobre su reserva?
         </Text>
         <Button
-          href="https://wa.me/5492494027920"
+          href={`https://wa.me/${whatsapp}`}
           className="bg-green-moss text-white px-8 py-3 rounded-lg font-medium no-underline"
           style={{
             backgroundColor: '#3F6C29',

@@ -3,6 +3,9 @@ import { Cabin, Lora } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { GoogleAnalytics, GoogleTagManager } from "@/components/GoogleAnalytics";
+import { getSiteContent } from "@/lib/db/content";
+import { withFallback } from "@/lib/content-fallback";
+import type { SeoContent } from "@/lib/content-schemas";
 
 const cabin = Cabin({
   variable: "--font-cabin",
@@ -16,29 +19,31 @@ const lora = Lora({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+// Defaults hardcodeados (valores actuales) para el SEO editable.
+const SEO_DEFAULT_TITLE =
+  "Las Calandrias - Cabañas en Tandil | Alojamiento de Lujo en las Sierras";
+const SEO_DEFAULT_DESCRIPTION =
+  "Cabañas de lujo en Tandil, Buenos Aires. Alojamiento exclusivo en las sierras para vacaciones perfectas. Relax, naturaleza y confort en Las Calandrias. Reservá tu escapada.";
+const SEO_DEFAULT_KEYWORDS =
+  "cabañas tandil, alojamiento tandil, vacaciones tandil, estadía tandil, sierra tandil, cabaña tandil, calandrias, cabañas buenos aires, turismo tandil, relax tandil, escapada fin de semana, cabañas con pileta, alojamiento sierra, vacaciones sierras, cabañas lujo tandil";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSiteContent<SeoContent>("seo");
+
+  const title = withFallback(seo?.title, SEO_DEFAULT_TITLE);
+  const description = withFallback(seo?.description, SEO_DEFAULT_DESCRIPTION);
+  const keywords = withFallback(seo?.keywords, SEO_DEFAULT_KEYWORDS)
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+
+  return {
   title: {
-    default: "Las Calandrias - Cabañas en Tandil | Alojamiento de Lujo en las Sierras",
+    default: title,
     template: "%s | Las Calandrias - Cabañas Tandil"
   },
-  description: "Cabañas de lujo en Tandil, Buenos Aires. Alojamiento exclusivo en las sierras para vacaciones perfectas. Relax, naturaleza y confort en Las Calandrias. Reservá tu escapada.",
-  keywords: [
-    "cabañas tandil",
-    "alojamiento tandil", 
-    "vacaciones tandil",
-    "estadía tandil",
-    "sierra tandil",
-    "cabaña tandil",
-    "calandrias",
-    "cabañas buenos aires",
-    "turismo tandil",
-    "relax tandil",
-    "escapada fin de semana",
-    "cabañas con pileta",
-    "alojamiento sierra",
-    "vacaciones sierras",
-    "cabañas lujo tandil"
-  ],
+  description,
+  keywords,
   authors: [{ name: "Las Calandrias" }],
   creator: "Las Calandrias",
   publisher: "Las Calandrias",
@@ -55,8 +60,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     url: 'https://las-calandrias.com',
-    title: 'Las Calandrias - Cabañas en Tandil | Alojamiento de Lujo en las Sierras',
-    description: 'Cabañas de lujo en Tandil, Buenos Aires. Alojamiento exclusivo en las sierras para vacaciones perfectas. Relax, naturaleza y confort en Las Calandrias.',
+    title,
+    description,
     siteName: 'Las Calandrias',
     images: [{
       url: '/gallery/vista-aerea-del-complejo.jpg',
@@ -67,8 +72,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Las Calandrias - Cabañas en Tandil | Alojamiento de Lujo en las Sierras',
-    description: 'Cabañas de lujo en Tandil, Buenos Aires. Alojamiento exclusivo en las sierras para vacaciones perfectas.',
+    title,
+    description,
     images: ['/gallery/vista-aerea-del-complejo.jpg'],
   },
   robots: {
@@ -85,7 +90,8 @@ export const metadata: Metadata = {
   verification: {
     google: 'google-site-verification-code-here', // Se configurará después
   },
-};
+  };
+}
 
 export default function RootLayout({
   children,

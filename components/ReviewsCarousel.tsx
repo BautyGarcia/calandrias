@@ -2,9 +2,13 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { reviews } from "@/data/reviews"
+import type { Review } from "@/types/db"
 
-export function ReviewsCarousel() {
+interface ReviewsCarouselProps {
+  reviews: Review[]
+}
+
+export function ReviewsCarousel({ reviews }: ReviewsCarouselProps) {
   const [isHovering, setIsHovering] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
   const [cardWidth, setCardWidth] = useState(0)
@@ -75,10 +79,10 @@ export function ReviewsCarousel() {
                       {item.name.split(' ').map(n => n[0]).join('').slice(0,2)}
                     </div>
                   </div>
-                  <p className="text-[var(--slate-gray)] mb-4 italic">&quot;{item.review}&quot;</p>
+                  <p className="text-[var(--slate-gray)] mb-4 italic">&quot;{item.text}&quot;</p>
                   <div>
                     <p className="font-medium text-[var(--dark-wood)]">{item.name}</p>
-                    <p className="text-xs text-[var(--slate-gray)]">{item.city}</p>
+                    <p className="text-xs text-[var(--slate-gray)]">{item.location}</p>
                   </div>
                 </CardContent>
               </Card>

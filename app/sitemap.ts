@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
-import { getAllCabinSlugs } from '@/data/cabins'
+import { getCabins } from '@/lib/db/cabins'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://las-calandrias.com'
 
     // Páginas estáticas principales
@@ -20,10 +20,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
     ]
 
-    // Páginas dinámicas de cabañas
-    const cabinSlugs = getAllCabinSlugs()
-    const cabinPages: MetadataRoute.Sitemap = cabinSlugs.map((slug) => ({
-        url: `${baseUrl}/cabanas/${slug}`,
+    // Páginas dinámicas de cabañas (desde la DB)
+    const cabins = await getCabins()
+    const cabinPages: MetadataRoute.Sitemap = cabins.map((cabin) => ({
+        url: `${baseUrl}/cabanas/${cabin.slug}`,
         lastModified: new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.7,

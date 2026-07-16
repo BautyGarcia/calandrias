@@ -1,6 +1,7 @@
 import { render } from '@react-email/render'
 import { resend, DEFAULT_FROM_EMAIL } from './resend'
 import ReservationConfirmation, { ReservationConfirmationData } from '../emails/templates/ReservationConfirmation'
+import { getSiteSettings } from './db/content'
 
 interface SendEmailOptions {
   to: string
@@ -26,8 +27,20 @@ export class EmailService {
     options: Omit<SendEmailOptions, 'subject'>
   ) {
     try {
-      const emailHtml = await render(ReservationConfirmation({ data }))
-      
+      // Inyecta los datos de contacto editables (site_settings) con fallback
+      // a los defaults del template si la consulta falla.
+      const settings = await getSiteSettings().catch(() => null)
+      const enrichedData: ReservationConfirmationData = {
+        ...data,
+        whatsapp: data.whatsapp ?? settings?.whatsapp,
+        email: data.email ?? settings?.email,
+        address: data.address ?? settings?.address,
+        checkinTime: data.checkinTime ?? settings?.checkinTime,
+        checkoutTime: data.checkoutTime ?? settings?.checkoutTime,
+      }
+
+      const emailHtml = await render(ReservationConfirmation({ data: enrichedData }))
+
       const result = await resend.emails.send({
         from: options.from || DEFAULT_FROM_EMAIL,
         to: options.to,

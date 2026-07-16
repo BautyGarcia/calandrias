@@ -12,9 +12,17 @@ import {
 
 interface LocationMapProps {
     mapUrl?: string;
+    whatsapp?: string;
+    phone?: string;
+    email?: string;
 }
 
-export function LocationMap({ mapUrl = "" }: LocationMapProps) {
+export function LocationMap({
+    mapUrl = "",
+    whatsapp = "5492494027920",
+    phone = "5492494027920",
+    email = "Lascalandrias123@gmail.com",
+}: LocationMapProps) {
     const [isMapLoaded, setIsMapLoaded] = useState(false)
 
     return (
@@ -84,19 +92,19 @@ export function LocationMap({ mapUrl = "" }: LocationMapProps) {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button variant="moss" size="lg" asChild>
-                        <a href="https://wa.me/5492494027920">
+                        <a href={`https://wa.me/${whatsapp}`}>
                             <MessageCircle className="h-4 w-4 mr-2" />
                             WhatsApp
                         </a>
                     </Button>
                     <Button variant="outline" size="lg" className="border-[var(--brown-earth)] text-[var(--brown-earth)]" asChild>
-                        <a href="tel:+5492494027920">
+                        <a href={`tel:+${phone.replace(/[^\d]/g, '')}`}>
                             <Phone className="h-4 w-4 mr-2" />
                             Llamar ahora
                         </a>
                     </Button>
                     <Button variant="outline" size="lg" className="border-[var(--brown-earth)] text-[var(--brown-earth)]" asChild>
-                        <a href="mailto:Lascalandrias123@gmail.com">
+                        <a href={`mailto:${email}`}>
                             <Mail className="h-4 w-4 mr-2" />
                             Enviar consulta
                         </a>

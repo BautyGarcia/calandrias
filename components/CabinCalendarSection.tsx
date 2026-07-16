@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Calendar, Loader2, CalendarDays, Users } from "lucide-react"
+import { AlertCircle, Calendar, Loader2, CalendarDays, Users, DollarSign, MessageCircle } from "lucide-react"
 import CabinAvailabilityCalendar, { DateRange } from '@/components/calendar/CabinAvailabilityCalendar'
 import SelectedDateRange from '@/components/calendar/SelectedDateRange'
 import ReservationForm from '@/components/ReservationForm'
@@ -18,9 +18,11 @@ import { calculatePriceForDateRange, formatPrice } from '@/utils/pricing'
 
 interface CabinCalendarSectionProps {
   cabin: Cabin
+  bookingsEnabled: boolean
+  whatsapp: string
 }
 
-export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
+export default function CabinCalendarSection({ cabin, bookingsEnabled, whatsapp }: CabinCalendarSectionProps) {
   const { events, loading, error, syncing, refreshAvailabilityOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
   const { isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
@@ -94,7 +96,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
   // Check if dates are selected for price display
   const hasSelectedDates = selectedRange.from && selectedRange.to
-  console.log(hasSelectedDates)
+
   // Handle reservation form submission
   // Siguiendo SRP: solo orquestación, delegando responsabilidades al adaptador
   const handleReservationSubmit = useCallback(async (formData: ReservationFormData): Promise<void> => {
@@ -246,63 +248,78 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
                       </div>
                     </div>
 
-                    {/* Price Estimate */}
-                    <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
-                      {/* Temporalmente oculto */}
-                      {/*
-                      <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
-                      {hasSelectedDates && pricingBreakdown ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[var(--slate-gray)]">{formatPrice(pricePerNight)} x {nights} {nights === 1 ? 'noche' : 'noches'}</span>
-                            <span className="text-[var(--dark-wood)]">{formatPrice(basePrice)}</span>
-                          </div>
-                          
-                          {pricingBreakdown.hasDiscount && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-green-600">Descuento días de semana</span>
-                              <span className="text-green-600">-{formatPrice(pricingBreakdown.weekdayDiscount)}</span>
+                    {bookingsEnabled ? (
+                      <>
+                        {/* Price Estimate */}
+                        <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
+                          <h4 className="font-medium text-[var(--brown-earth)]">Estimado de precios</h4>
+                          {hasSelectedDates && pricingBreakdown ? (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-[var(--slate-gray)]">{formatPrice(pricePerNight)} x {nights} {nights === 1 ? 'noche' : 'noches'}</span>
+                                <span className="text-[var(--dark-wood)]">{formatPrice(basePrice)}</span>
+                              </div>
+
+                              {pricingBreakdown.hasDiscount && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-green-600">Descuento días de semana</span>
+                                  <span className="text-green-600">-{formatPrice(pricingBreakdown.weekdayDiscount)}</span>
+                                </div>
+                              )}
+
+                              <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
+                                <div className="flex justify-between font-medium">
+                                  <span className="text-[var(--brown-earth)]">Total</span>
+                                  <span className="text-[var(--brown-earth)]">{formatPrice(totalPrice)}</span>
+                                </div>
+
+                                {pricingBreakdown.hasDiscount && (
+                                  <p className="text-xs text-green-600 text-right mt-1">
+                                    ¡Ahorrás {formatPrice(pricingBreakdown.weekdayDiscount)}!
+                                  </p>
+                                )}
+                              </div>
                             </div>
+                          ) : (
+                            <p className="text-sm text-[var(--slate-gray)] text-center">
+                              Selecciona fechas para ver el estimado de precios.
+                            </p>
                           )}
-                          
-                          <div className="border-t border-[var(--beige-arena)] pt-2 mt-2">
-                            <div className="flex justify-between font-medium">
-                              <span className="text-[var(--brown-earth)]">Total</span>
-                              <span className="text-[var(--brown-earth)]">{formatPrice(totalPrice)}</span>
-                            </div>
-                            
-                            {pricingBreakdown.hasDiscount && (
-                              <p className="text-xs text-green-600 text-right mt-1">
-                                ¡Ahorrás {formatPrice(pricingBreakdown.weekdayDiscount)}!
-                              </p>
-                            )}
-                          </div>
                         </div>
-                      ) : (
-                        <p className="text-sm text-[var(--slate-gray)] text-center">
-                          Selecciona fechas para ver el estimado de precios.
-                        </p>
-                      )}
-                      */}
-                    </div>
 
-                    {/* Reserve Button */}
-                    <Button
-                      variant="wood"
-                      size="lg"
-                      className="w-full font-medium"
-                      disabled={!selectedRange.from || !selectedRange.to || true}
-                      onClick={() => setCurrentStep('form')}
-                    >
-                      {/* <DollarSign className="h-4 w-4 mr-2" />
-                      Continuar con la Reserva */}
-                      Contactar por WhatsApp para reservar
-                    </Button>
+                        {/* Reserve Button */}
+                        <Button
+                          variant="wood"
+                          size="lg"
+                          className="w-full font-medium"
+                          disabled={!selectedRange.from || !selectedRange.to}
+                          onClick={() => setCurrentStep('form')}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Continuar con la Reserva
+                        </Button>
 
-                    {(!selectedRange.from || !selectedRange.to) && (
-                      <p className="text-xs text-[var(--slate-gray)] text-center">
-                        {/* Selecciona fechas para continuar */}
-                      </p>
+                        {(!selectedRange.from || !selectedRange.to) && (
+                          <p className="text-xs text-[var(--slate-gray)] text-center">
+                            Selecciona fechas para continuar
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Reservas online deshabilitadas: derivar a WhatsApp */}
+                        <div className="space-y-4 pt-4 border-t border-[var(--beige-arena)]">
+                          <p className="text-sm text-[var(--slate-gray)] text-center">
+                            Escribinos por WhatsApp y coordinamos tu reserva con disponibilidad y precios.
+                          </p>
+                        </div>
+                        <Button variant="moss" size="lg" className="w-full font-medium" asChild>
+                          <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Contactar por WhatsApp para reservar
+                          </a>
+                        </Button>
+                      </>
                     )}
                   </CardContent>
                 </Card>

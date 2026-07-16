@@ -4,17 +4,26 @@ import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { bentoGalleryItems } from "@/data/bentoGalleryItems"
+import type { GalleryItem } from "@/types/db"
 
-export function BentoGridGallery() {
+// Los valores de `span` vienen de la DB (site_content/gallery). Tailwind sólo
+// compila las clases que encuentra literalmente en el código, así que las
+// declaramos acá como safelist para que la grilla renderice ambos anchos:
+// col-span-1 row-span-2 col-span-2 row-span-2
+
+interface BentoGridGalleryProps {
+  items: GalleryItem[]
+}
+
+export function BentoGridGallery({ items }: BentoGridGalleryProps) {
   const [visibleCount, setVisibleCount] = useState(8)
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[300px]">
-        {bentoGalleryItems.slice(0, visibleCount).map((item, idx) => (
+        {items.slice(0, visibleCount).map((item, idx) => (
           <div
-            key={idx}
+            key={item.id ?? idx}
             className={cn(
               "group relative overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900",
               item.span
@@ -23,7 +32,7 @@ export function BentoGridGallery() {
             <div className="absolute inset-0 z-10 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
 
             <Image
-              src={item.image || "/placeholder.svg"}
+              src={item.imageUrl || "/placeholder.svg"}
               alt={item.title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -36,7 +45,7 @@ export function BentoGridGallery() {
           </div>
         ))}
       </div>
-      {visibleCount < bentoGalleryItems.length && (
+      {visibleCount < items.length && (
         <div className="flex justify-center pt-4">
           <Button onClick={() => setVisibleCount((c) => c + 8)} variant="outline">
             Mostrar más

@@ -23,8 +23,8 @@ const GENERIC_ERROR = 'No se pudo completar la operación. Intentá nuevamente.'
 const idSchema = z.string().uuid()
 
 // Valores de `span` soportados por la grilla bento (Tailwind sólo compila las
-// clases presentes en el código: data/bentoGalleryItems.ts). Limitamos el select
-// a estos dos para no romper el layout público con clases inexistentes.
+// clases presentes en el código: ver safelist en components/BentoGridGallery.tsx).
+// Limitamos el select a estos dos para no romper el layout público con clases inexistentes.
 const GALLERY_SPANS = ['col-span-1 row-span-2', 'col-span-2 row-span-2'] as const
 
 const faqInputSchema = z.object({

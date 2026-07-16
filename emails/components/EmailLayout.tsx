@@ -1,11 +1,26 @@
 import { Html, Head, Font, Preview, Tailwind, Body, Container, Section } from '@react-email/components'
 
+interface EmailLayoutContact {
+    address?: string
+    whatsapp?: string
+    email?: string
+}
+
 interface EmailLayoutProps {
     preview: string
     children: React.ReactNode
+    contact?: EmailLayoutContact
 }
 
-export default function EmailLayout({ preview, children }: EmailLayoutProps) {
+// Defaults hardcodeados usados como fallback si no se pasan datos de contacto.
+const DEFAULT_ADDRESS = 'Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires'
+const DEFAULT_WHATSAPP = '+54 9 2494 027920'
+const DEFAULT_EMAIL = 'Lascalandrias123@gmail.com'
+
+export default function EmailLayout({ preview, children, contact }: EmailLayoutProps) {
+    const address = contact?.address || DEFAULT_ADDRESS
+    const whatsapp = contact?.whatsapp || DEFAULT_WHATSAPP
+    const email = contact?.email || DEFAULT_EMAIL
     return (
         <Html>
             <Head>
@@ -68,8 +83,8 @@ export default function EmailLayout({ preview, children }: EmailLayoutProps) {
                         <Section className="bg-light-sand p-6 text-center border-t border-beige-arena/30 text-sm text-slate-gray">
                             <p className="m-2">
                                 <strong>Las Calandrias</strong><br />
-                                Ronca-Hue 50, B7000 Tandil, Provincia de Buenos Aires<br />
-                                WhatsApp: +54 9 2494 027920 · Email: Lascalandrias123@gmail.com
+                                {address}<br />
+                                WhatsApp: {whatsapp} · Email: {email}
                             </p>
                             <div className="mt-4 pt-4 border-t border-beige-arena/30">
                                 <p className="text-xs text-slate-gray/70 m-0">

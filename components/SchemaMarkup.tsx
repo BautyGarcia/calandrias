@@ -1,24 +1,39 @@
 import Script from 'next/script'
 import { Cabin } from '@/types/cabin'
+import type { Review } from '@/types/db'
 import { getMinimumPrice, formatPrice } from '@/utils/pricing'
 import { imageUrl as resolveImageUrl } from '@/utils/image'
+
+// Defaults hardcodeados usados como fallback cuando site_settings no está disponible.
+const DEFAULT_ADDRESS = "Ronca-Hue 50"
+const DEFAULT_EMAIL = "Lascalandrias123@gmail.com"
+const DEFAULT_TELEPHONE = "+54 9 2494 02‑7920"
 
 interface LocalBusinessSchemaProps {
     name?: string
     description?: string
     image?: string
     url?: string
+    streetAddress?: string
+    telephone?: string
+    email?: string
 }
 
 interface HotelSchemaProps {
     cabin: Cabin
+    streetAddress?: string
+    telephone?: string
+    email?: string
 }
 
 export function LocalBusinessSchema({
     name = "Las Calandrias",
     description = "Cabañas de lujo en Tandil, Buenos Aires. Alojamiento exclusivo en las sierras para vacaciones perfectas.",
     image = "/gallery/vista-aerea-del-complejo.jpg",
-    url = "https://las-calandrias.com"
+    url = "https://las-calandrias.com",
+    streetAddress = DEFAULT_ADDRESS,
+    telephone = DEFAULT_TELEPHONE,
+    email = DEFAULT_EMAIL,
 }: LocalBusinessSchemaProps) {
     const schema = {
         "@context": "https://schema.org",
@@ -34,7 +49,7 @@ export function LocalBusinessSchema({
         "logo": `${url}/logo.png`,
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": "Ronca-Hue 50",
+            "streetAddress": streetAddress,
             "addressLocality": "Tandil",
             "addressRegion": "Buenos Aires",
             "postalCode": "B7000",
@@ -45,8 +60,8 @@ export function LocalBusinessSchema({
             "latitude": "-37.360580399999996",
             "longitude": "-59.1513972"
         },
-        "telephone": "+54 9 2494 02‑7920",
-        "email": "Lascalandrias123@gmail.com",
+        "telephone": telephone,
+        "email": email,
         "sameAs": [
             // Agregar redes sociales cuando estén disponibles
         ],
@@ -126,11 +141,16 @@ export function LocalBusinessSchema({
     )
 }
 
-export function HotelSchema({ cabin }: HotelSchemaProps) {
+export function HotelSchema({
+    cabin,
+    streetAddress = DEFAULT_ADDRESS,
+    telephone = DEFAULT_TELEPHONE,
+    email = DEFAULT_EMAIL,
+}: HotelSchemaProps) {
     const minPrice = getMinimumPrice(cabin)
     const formattedPrice = formatPrice(minPrice)
     const imageUrl = resolveImageUrl(cabin.image.url)
-    
+
     const schema = {
         "@context": "https://schema.org",
         "@type": "Hotel",
@@ -139,14 +159,14 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
         "image": imageUrl,
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": "Ronca-Hue 50",
+            "streetAddress": streetAddress,
             "addressLocality": "Tandil",
             "addressRegion": "Buenos Aires",
             "postalCode": "B7000",
             "addressCountry": "AR"
         },
-        "telephone": "+54 9 2494 02‑7920",
-        "email": "Lascalandrias123@gmail.com",
+        "telephone": telephone,
+        "email": email,
         "url": `https://las-calandrias.com/cabanas/${cabin.slug}`,
         "priceRange": formattedPrice,
         "numberOfRooms": cabin.bedrooms,
@@ -178,7 +198,30 @@ export function HotelSchema({ cabin }: HotelSchemaProps) {
     )
 }
 
-export function ReviewsSchema() {
+// Reseñas de fallback si la DB todavía no tiene reseñas cargadas.
+const FALLBACK_REVIEWS = [
+    {
+        name: "María González",
+        rating: 5,
+        text: "Una experiencia única en las sierras. Las cabañas son hermosas y la atención excelente.",
+    },
+    {
+        name: "Carlos Rodríguez",
+        rating: 5,
+        text: "Perfecto para desconectar. La vista es espectacular y las instalaciones de primera.",
+    },
+]
+
+interface ReviewsSchemaProps {
+    reviews?: Review[]
+}
+
+export function ReviewsSchema({ reviews }: ReviewsSchemaProps = {}) {
+    const source =
+        reviews && reviews.length > 0
+            ? reviews.map((r) => ({ name: r.name, rating: r.rating, text: r.text }))
+            : FALLBACK_REVIEWS
+
     const schema = {
         "@context": "https://schema.org",
         "@type": "Organization",
@@ -190,34 +233,19 @@ export function ReviewsSchema() {
             "bestRating": "5",
             "worstRating": "1"
         },
-        "review": [
-            {
-                "@type": "Review",
-                "author": {
-                    "@type": "Person",
-                    "name": "María González"
-                },
-                "reviewRating": {
-                    "@type": "Rating",
-                    "ratingValue": "5",
-                    "bestRating": "5"
-                },
-                "reviewBody": "Una experiencia única en las sierras. Las cabañas son hermosas y la atención excelente."
+        "review": source.map((r) => ({
+            "@type": "Review",
+            "author": {
+                "@type": "Person",
+                "name": r.name
             },
-            {
-                "@type": "Review",
-                "author": {
-                    "@type": "Person",
-                    "name": "Carlos Rodríguez"
-                },
-                "reviewRating": {
-                    "@type": "Rating",
-                    "ratingValue": "5",
-                    "bestRating": "5"
-                },
-                "reviewBody": "Perfecto para desconectar. La vista es espectacular y las instalaciones de primera."
-            }
-        ]
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": String(r.rating),
+                "bestRating": "5"
+            },
+            "reviewBody": r.text
+        }))
     }
 
     return (

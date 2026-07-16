@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCabins, getCabinBySlug } from '@/lib/db/cabins'
+import { getSiteSettings } from '@/lib/db/content'
 import { imageUrl } from '@/utils/image'
 import CabinCalendarSection from '@/components/CabinCalendarSection'
 import { Card, CardContent } from '@/components/ui/card'
@@ -95,7 +96,7 @@ export const revalidate = 3600
 
 export default async function CabinPage({ params }: PageProps) {
     const { slug } = await params
-    const cabin = await getCabinBySlug(slug)
+    const [cabin, settings] = await Promise.all([getCabinBySlug(slug), getSiteSettings()])
 
     if (!cabin) {
         notFound()
@@ -106,7 +107,12 @@ export default async function CabinPage({ params }: PageProps) {
     return (
         <>
             {/* Schema Markup específico para la cabaña */}
-            <HotelSchema cabin={cabin} />
+            <HotelSchema
+                cabin={cabin}
+                streetAddress={settings.address}
+                telephone={settings.phone}
+                email={settings.email}
+            />
 
             <main className="flex min-h-screen flex-col">
                 {/* Hero Section con imagen de fondo */}
@@ -276,7 +282,11 @@ export default async function CabinPage({ params }: PageProps) {
 
                 {/* Calendar section */}
                 <div id="calendar-section">
-                    <CabinCalendarSection cabin={cabin} />
+                    <CabinCalendarSection
+                        cabin={cabin}
+                        bookingsEnabled={settings.bookingsEnabled}
+                        whatsapp={settings.whatsapp}
+                    />
                 </div>
             </main>
         </>

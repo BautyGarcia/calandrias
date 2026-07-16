@@ -2,6 +2,7 @@ import { CabinsShowcase } from "@/components/CabinsShowcase"
 import Image from "next/image"
 import { Metadata } from "next"
 import { getCabins } from "@/lib/db/cabins"
+import { getSiteSettings } from "@/lib/db/content"
 
 export const metadata: Metadata = {
     title: "Nuestras Cabañas en Tandil | Alojamiento de Lujo en las Sierras",
@@ -37,8 +38,8 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function CabanasPage() {
-    // Fetch cabins from Supabase
-    const cabins = await getCabins()
+    // Fetch cabins + settings from Supabase
+    const [cabins, settings] = await Promise.all([getCabins(), getSiteSettings()])
 
     return (
         <main className="flex min-h-screen flex-col">
@@ -71,7 +72,11 @@ export default async function CabanasPage() {
                 />
                 
                 <div className="container mx-auto px-4 relative z-10">
-                    <CabinsShowcase cabins={cabins} />
+                    <CabinsShowcase
+                        cabins={cabins}
+                        bookingsEnabled={settings.bookingsEnabled}
+                        whatsapp={settings.whatsapp}
+                    />
                 </div>
             </section>
         </main>

@@ -213,6 +213,19 @@ export function parseCabinForm(raw: Record<string, unknown>): ParseResult {
     return { ok: true, data }
 }
 
+// Genera un slug URL-safe a partir del nombre de una cabaña: minúsculas,
+// sin tildes/ñ (NFD + strip de diacríticos), espacios y símbolos → guiones,
+// sin guiones repetidos ni en los extremos. Puede devolver '' si no queda
+// nada usable (el caller debe validar).
+export function slugifyCabinName(name: string): string {
+    return name
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+}
+
 // Airbnb iCal URL: https:// y host que contenga 'airbnb', o vacío para limpiar.
 export const airbnbUrlSchema = z
     .string()

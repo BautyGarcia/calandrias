@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth'
 import { getAllCabinsAdmin } from '@/lib/db/cabins'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { NewCabinDialog } from '@/components/admin/NewCabinDialog'
 import { ImageOff, Pencil } from 'lucide-react'
 
 const arsFormatter = new Intl.NumberFormat('es-AR', {
@@ -21,11 +22,14 @@ export default async function CabanasPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="font-serif text-2xl font-bold text-[var(--brown-earth)]">Cabañas</h1>
-                <p className="text-sm text-[var(--slate-gray)]">
-                    Editá el contenido, las fotos, los precios y la sincronización con Airbnb de cada cabaña.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h1 className="font-serif text-2xl font-bold text-[var(--brown-earth)]">Cabañas</h1>
+                    <p className="text-sm text-[var(--slate-gray)]">
+                        Editá el contenido, las fotos, los precios y la sincronización con Airbnb de cada cabaña.
+                    </p>
+                </div>
+                <NewCabinDialog />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

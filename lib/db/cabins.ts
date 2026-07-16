@@ -197,6 +197,33 @@ export async function updateCabin(id: string, patch: Partial<CabinInput>): Promi
     if (error) throw new Error(`Error actualizando cabaña: ${error.message}`)
 }
 
+// (admin) Crea una cabaña borrador (oculta) con el resto de los campos en sus
+// defaults de DB; el contenido se completa después en el editor. Devuelve
+// 'duplicate' si el slug ya existe.
+export async function createCabin(slug: string, name: string): Promise<'created' | 'duplicate'> {
+    const supabase = createAdminClient()
+
+    const { data: maxRow, error: maxError } = await supabase
+        .from('cabins')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    if (maxError) throw new Error(`Error creando cabaña: ${maxError.message}`)
+
+    const { error } = await supabase.from('cabins').insert({
+        slug,
+        name,
+        is_published: false,
+        sort_order: (maxRow?.sort_order ?? 0) + 1,
+    })
+    if (error) {
+        if (error.code === '23505') return 'duplicate'
+        throw new Error(`Error creando cabaña: ${error.message}`)
+    }
+    return 'created'
+}
+
 // (admin) Configuraciones de sync de Airbnb (URLs iCal privadas).
 export async function getAirbnbSyncConfigs(): Promise<
     { cabinId: string; cabinSlug: string; cabinName: string; icalUrl: string }[]

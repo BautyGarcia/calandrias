@@ -3,11 +3,12 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth'
-import { updateCabin, setAirbnbIcalUrl } from '@/lib/db/cabins'
+import { updateCabin, createCabin, setAirbnbIcalUrl } from '@/lib/db/cabins'
 import { parseCabinForm, airbnbUrlSchema } from '@/lib/cabin-form'
 import { uploadImageToBucket, type UploadResult } from '@/lib/actions/upload'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
+export type CreateCabinResult = { ok: true; slug: string } | { ok: false; error: string }
 export type { UploadResult }
 
 const GENERIC_ERROR = 'No se pudo completar la operación. Intentá nuevamente.'
@@ -20,6 +21,40 @@ function revalidateCabinSurfaces() {
     revalidatePath('/cabanas/[slug]', 'page')
     revalidatePath('/')
     revalidatePath('/admin/cabanas')
+}
+
+const newCabinSchema = z.object({
+    name: z.string().trim().min(1, 'Escribí el nombre de la cabaña').max(80, 'Nombre demasiado largo'),
+    // El slug identifica la cabaña en la URL pública y en las reservas
+    // (cabinId = slug): solo minúsculas, números y guiones, y no cambia después.
+    slug: z
+        .string()
+        .trim()
+        .min(1, 'El slug no puede quedar vacío')
+        .max(80, 'Slug demasiado largo')
+        .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'El slug solo puede tener minúsculas, números y guiones'),
+})
+
+// Crea una cabaña borrador (oculta) para completarla en el editor.
+export async function createCabinAction(input: unknown): Promise<CreateCabinResult> {
+    await requireAdmin()
+
+    const parsed = newCabinSchema.safeParse(input)
+    if (!parsed.success) {
+        return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
+    }
+
+    try {
+        const result = await createCabin(parsed.data.slug, parsed.data.name)
+        if (result === 'duplicate') {
+            return { ok: false, error: 'Ya existe una cabaña con ese slug. Elegí otro.' }
+        }
+    } catch {
+        return { ok: false, error: GENERIC_ERROR }
+    }
+
+    revalidateCabinSurfaces()
+    return { ok: true, slug: parsed.data.slug }
 }
 
 // Actualiza el contenido/precios de una cabaña. `id` = documentId (uuid).

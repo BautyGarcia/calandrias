@@ -5,6 +5,7 @@ import {
     overridesToPricingGrid,
     pricingGridToOverrides,
     parseCabinForm,
+    slugifyCabinName,
     type PricingRow,
 } from '@/lib/cabin-form'
 import type { CabinPricingOverride } from '@/types/cabin'
@@ -169,5 +170,27 @@ describe('parseCabinForm', () => {
         if (!res.ok) return
         expect(res.data.imageUrl).toBeNull()
         expect(res.data.thumbnailUrl).toBeNull()
+    })
+})
+
+describe('slugifyCabinName', () => {
+    it('convierte a minúsculas con guiones', () => {
+        expect(slugifyCabinName('El Refugio')).toBe('el-refugio')
+    })
+
+    it('elimina tildes y ñ', () => {
+        expect(slugifyCabinName('Cabaña Añoranza del Ombú')).toBe('cabana-anoranza-del-ombu')
+    })
+
+    it('descarta símbolos y colapsa guiones múltiples', () => {
+        expect(slugifyCabinName('La  Loma!! -- (nueva)')).toBe('la-loma-nueva')
+    })
+
+    it('recorta guiones en los extremos', () => {
+        expect(slugifyCabinName('  ¡Hola!  ')).toBe('hola')
+    })
+
+    it('devuelve vacío si no queda nada usable', () => {
+        expect(slugifyCabinName('¡¡¡')).toBe('')
     })
 })

@@ -82,12 +82,14 @@ enviando el SQL de la migración en el cuerpo. Útil cuando no hay CLI a mano.
 
 ### Cómo dar de alta un administrador
 
-Hacen falta **los dos pasos** (si falta uno, la persona no entra):
+Hacen falta **los dos pasos, en este orden** (si falta uno, la persona no entra):
 
-1. Agregar su email a la variable **`ADMIN_EMAILS`** (lista separada por comas) y redesplegar.
-2. Crear el usuario en **Supabase Dashboard → Authentication → Users** (con su email y una contraseña, o invitándolo).
+1. Agregar su email a la variable **`ADMIN_EMAILS`** (lista separada por comas) en Vercel y **redesplegar**. Hacerlo primero, así la persona puede entrar apenas crea su contraseña.
+2. Invitarlo desde **Supabase Dashboard → Authentication → Users → Invite user**. Le llega un mail brandeado con un botón "Crear mi contraseña" que lo lleva a `admin.calandrias.com.ar/reset`; ahí define su contraseña y ya puede ingresar al panel.
 
-Recién con el email en la allowlist **y** el usuario existente en Supabase Auth podrá iniciar sesión en el panel.
+El enlace de invitación vence a las 24 horas. Si venció, se puede reenviar la invitación desde el mismo lugar del dashboard, o la persona puede usar "¿Olvidaste tu contraseña?" en la pantalla de ingreso (el usuario ya existe en Auth desde la primera invitación).
+
+**Dónde vive esta configuración:** los templates de los mails de invitación y de recuperación están versionados en `docs/supabase/email-templates/` y aplicados a Supabase vía Management API (`PATCH /v1/projects/vmtmgsnlmhihbycpqolo/config/auth`, campos `mailer_templates_invite_content` y `mailer_templates_recovery_content`). En la misma config viven el **Site URL** (`https://admin.calandrias.com.ar`), las **Redirect URLs** permitidas (`…/reset` de prod y `http://localhost:3000/admin/reset` para desarrollo) y el **SMTP custom**: los mails de Auth salen por **Resend** (`smtp.resend.com`, remitente `noreply@calandrias.com.ar`, misma API key que los mails de reservas) — necesario porque el tier free de Supabase no permite templates custom con su mailer default. Si se editan los HTML, hay que volver a aplicar el PATCH.
 
 ---
 

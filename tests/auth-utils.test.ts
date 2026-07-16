@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAuthHashType, sanitizeRedirect } from '@/lib/auth-utils'
+import { parseAuthHashTokens, parseAuthHashType, sanitizeRedirect } from '@/lib/auth-utils'
 
 describe('sanitizeRedirect', () => {
     const fallback = '/admin/reservas'
@@ -88,5 +88,27 @@ describe('parseAuthHashType', () => {
 
     it('devuelve null si type está vacío', () => {
         expect(parseAuthHashType('#type=&access_token=abc')).toBeNull()
+    })
+})
+
+describe('parseAuthHashTokens', () => {
+    it('extrae access y refresh token de un hash de callback de Supabase', () => {
+        expect(parseAuthHashTokens('#access_token=jwt123&expires_in=3600&refresh_token=ref456&type=invite')).toEqual({
+            access_token: 'jwt123',
+            refresh_token: 'ref456',
+        })
+    })
+
+    it('devuelve null si falta el refresh_token', () => {
+        expect(parseAuthHashTokens('#access_token=jwt123&type=invite')).toBeNull()
+    })
+
+    it('devuelve null si falta el access_token', () => {
+        expect(parseAuthHashTokens('#refresh_token=ref456&type=recovery')).toBeNull()
+    })
+
+    it('devuelve null para hash vacío o sin #', () => {
+        expect(parseAuthHashTokens('')).toBeNull()
+        expect(parseAuthHashTokens('access_token=jwt123&refresh_token=ref456')).toBeNull()
     })
 })

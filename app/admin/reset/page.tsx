@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase/client'
-import { parseAuthHashType } from '@/lib/auth-utils'
+import { parseAuthHashTokens, parseAuthHashType } from '@/lib/auth-utils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,13 +23,25 @@ export default function AdminResetPage() {
     const [isInvite, setIsInvite] = useState(false)
 
     useEffect(() => {
-        setIsInvite(parseAuthHashType(window.location.hash) === 'invite')
-        // El cliente del navegador procesa el token de recuperación del hash
-        // automáticamente (detectSessionInUrl). Verificamos que exista sesión.
+        const hash = window.location.hash
+        setIsInvite(parseAuthHashType(hash) === 'invite')
+        // El cliente browser usa flowType pkce y auth-js rechaza los hashes
+        // implicit de los links de email, así que detectSessionInUrl no crea
+        // la sesión: parseamos los tokens y la seteamos explícitamente.
+        const tokens = parseAuthHashTokens(hash)
         const supabase = createBrowserSupabase()
-        supabase.auth.getSession().then(({ data }) => {
-            setHasSession(!!data.session)
-        })
+        const session = tokens
+            ? supabase.auth.setSession(tokens).then(({ data, error }) => {
+                if (!error && data.session) {
+                    // Sacamos los tokens de la URL para que no queden en el
+                    // historial ni se reintente un setSession con tokens usados.
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+                    return true
+                }
+                return false
+            })
+            : supabase.auth.getSession().then(({ data }) => !!data.session)
+        session.then(setHasSession)
     }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {

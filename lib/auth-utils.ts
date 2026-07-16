@@ -38,3 +38,20 @@ export function parseAuthHashType(hash: string): string | null {
     if (!hash.startsWith('#')) return null
     return new URLSearchParams(hash.slice(1)).get('type') || null
 }
+
+/**
+ * Extrae los tokens de sesión del hash de un callback de Supabase Auth.
+ * Los links de email de Supabase (invite/recovery) usan el flujo implicit
+ * (tokens en el hash), pero el cliente browser de @supabase/ssr se crea con
+ * flowType 'pkce' y auth-js RECHAZA hashes implicit en modo pkce ("Not a
+ * valid PKCE flow url"), por lo que detectSessionInUrl nunca crea la sesión.
+ * La página debe parsear los tokens con esto y llamar setSession() explícito.
+ */
+export function parseAuthHashTokens(hash: string): { access_token: string; refresh_token: string } | null {
+    if (!hash.startsWith('#')) return null
+    const params = new URLSearchParams(hash.slice(1))
+    const access_token = params.get('access_token')
+    const refresh_token = params.get('refresh_token')
+    if (!access_token || !refresh_token) return null
+    return { access_token, refresh_token }
+}

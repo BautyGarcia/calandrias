@@ -8,7 +8,7 @@ import {
     seoSchema,
     SITE_CONTENT_KEYS,
 } from '@/lib/content-schemas'
-import { swapSortOrder } from '@/lib/sort-order'
+import { moveItem } from '@/lib/sort-order'
 
 const validHero = { title: 'Hola', subtitle: 'Bienvenido', ctaLabel: 'Reservar' }
 
@@ -103,29 +103,31 @@ describe('ctaSchema', () => {
     })
 })
 
-describe('swapSortOrder', () => {
-    const items = [
-        { id: 'a', sortOrder: 1 },
-        { id: 'b', sortOrder: 2 },
-        { id: 'c', sortOrder: 3 },
-    ]
+describe('moveItem', () => {
+    const items = ['a', 'b', 'c', 'd']
 
-    it('intercambia los sortOrder de dos posiciones', () => {
-        const next = swapSortOrder(items, 0, 1)
-        expect(next[0]).toEqual({ id: 'a', sortOrder: 2 })
-        expect(next[1]).toEqual({ id: 'b', sortOrder: 1 })
-        expect(next[2]).toEqual({ id: 'c', sortOrder: 3 })
+    it('mueve un elemento hacia adelante desplazando el resto', () => {
+        expect(moveItem(items, 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+    })
+
+    it('mueve un elemento hacia atrás desplazando el resto', () => {
+        expect(moveItem(items, 3, 1)).toEqual(['a', 'd', 'b', 'c'])
+    })
+
+    it('mueve al principio y al final', () => {
+        expect(moveItem(items, 2, 0)).toEqual(['c', 'a', 'b', 'd'])
+        expect(moveItem(items, 0, 3)).toEqual(['b', 'c', 'd', 'a'])
     })
 
     it('no muta el array original', () => {
-        const snapshot = JSON.parse(JSON.stringify(items))
-        swapSortOrder(items, 0, 2)
+        const snapshot = [...items]
+        moveItem(items, 0, 2)
         expect(items).toEqual(snapshot)
     })
 
-    it('devuelve el mismo contenido si los índices son inválidos o iguales', () => {
-        expect(swapSortOrder(items, 0, 0)).toEqual(items)
-        expect(swapSortOrder(items, -1, 1)).toEqual(items)
-        expect(swapSortOrder(items, 0, 99)).toEqual(items)
+    it('devuelve el array igual si los índices son inválidos o iguales', () => {
+        expect(moveItem(items, 1, 1)).toEqual(items)
+        expect(moveItem(items, -1, 1)).toEqual(items)
+        expect(moveItem(items, 0, 99)).toEqual(items)
     })
 })

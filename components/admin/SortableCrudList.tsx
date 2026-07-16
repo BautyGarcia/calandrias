@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -25,13 +25,12 @@ import {
 } from '@/components/ui/dialog'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { swapSortOrder } from '@/lib/sort-order'
+import { moveItem } from '@/lib/sort-order'
 import {
     Plus,
     Pencil,
     Trash2,
-    ArrowUp,
-    ArrowDown,
+    GripVertical,
     Loader2,
     Eye,
     EyeOff,
@@ -70,10 +69,14 @@ interface SortableCrudListProps {
     fields: CrudField[]
     titleField: string
     subtitleField?: string
+    /** Campo con URL de imagen para mostrar una miniatura en la fila. */
+    thumbnailField?: string
     addLabel: string
     entityLabel: string
     upsertAction: (input: Record<string, unknown>) => Promise<ActionResult>
     deleteAction: (id: string) => Promise<ActionResult>
+    /** Recibe la lista completa de ids en el orden nuevo (persiste en una sola operación). */
+    reorderAction: (ids: string[]) => Promise<ActionResult>
     uploadAction?: (form: FormData) => Promise<UploadResult>
 }
 
@@ -175,16 +178,25 @@ export function SortableCrudList({
     fields,
     titleField,
     subtitleField,
+    thumbnailField,
     addLabel,
     entityLabel,
     upsertAction,
     deleteAction,
+    reorderAction,
     uploadAction,
 }: SortableCrudListProps) {
     const router = useRouter()
     const [error, setError] = useState('')
     const [isPending, startTransition] = useTransition()
     const [busyId, setBusyId] = useState<string | null>(null)
+
+    // Reorden con drag & drop: orden optimista mientras persiste el cambio.
+    const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null)
+    // Id de la fila "armada" para arrastrar (el drag solo arranca desde el handle).
+    const [dragArmedId, setDragArmedId] = useState<string | null>(null)
+    const [dragId, setDragId] = useState<string | null>(null)
+    const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'above' | 'below' } | null>(null)
 
     // Dialog de edición/alta.
     const [editing, setEditing] = useState<CrudItem | null>(null)
@@ -196,7 +208,20 @@ export function SortableCrudList({
     // Confirmación de borrado.
     const [deleteTarget, setDeleteTarget] = useState<CrudItem | null>(null)
 
-    const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder)
+    // Cuando llegan datos frescos del server, descartamos el orden optimista.
+    useEffect(() => {
+        setOptimisticOrder(null)
+    }, [items])
+
+    const sorted = useMemo(() => {
+        const bySortOrder = [...items].sort((a, b) => a.sortOrder - b.sortOrder)
+        if (!optimisticOrder) return bySortOrder
+        const byId = new Map(bySortOrder.map((i) => [i.id, i]))
+        const ordered = optimisticOrder.map((id) => byId.get(id)).filter((i): i is CrudItem => !!i)
+        // Items que no estén en el orden optimista (p. ej. recién creados) van al final.
+        const seen = new Set(optimisticOrder)
+        return [...ordered, ...bySortOrder.filter((i) => !seen.has(i.id))]
+    }, [items, optimisticOrder])
 
     function emptyDraft(): Draft {
         const d: Draft = {}
@@ -281,22 +306,57 @@ export function SortableCrudList({
         })
     }
 
-    function handleMove(index: number, direction: -1 | 1) {
-        const target = index + direction
-        if (target < 0 || target >= sorted.length) return
-        const swapped = swapSortOrder(sorted, index, target)
-        const a = swapped[index]
-        const b = swapped[target]
+    // Aplica un orden nuevo: optimista en la UI, una sola operación en el server.
+    function applyOrder(ids: string[]) {
         setError('')
-        setBusyId(sorted[index].id)
+        setOptimisticOrder(ids)
         startTransition(async () => {
-            const r1 = await upsertAction(itemToInput(a))
-            const r2 = await upsertAction(itemToInput(b))
-            if (!r1.ok) setError(r1.error)
-            else if (!r2.ok) setError(r2.error)
-            setBusyId(null)
+            const result = await reorderAction(ids)
+            if (!result.ok) {
+                setOptimisticOrder(null)
+                setError(result.error)
+            }
             router.refresh()
         })
+    }
+
+    function handleDrop(targetIndex: number, edge: 'above' | 'below') {
+        setDropTarget(null)
+        if (!dragId) return
+        const ids = sorted.map((i) => i.id)
+        const from = ids.indexOf(dragId)
+        if (from === -1) return
+        const insertAt = edge === 'above' ? targetIndex : targetIndex + 1
+        const to = insertAt > from ? insertAt - 1 : insertAt
+        if (to === from) return
+        applyOrder(moveItem(ids, from, to))
+    }
+
+    // Reorden por teclado desde el handle (accesible sin mouse).
+    function handleReorderKey(index: number, e: React.KeyboardEvent) {
+        const direction = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+        if (!direction) return
+        e.preventDefault()
+        const to = index + direction
+        if (to < 0 || to >= sorted.length || isPending) return
+        applyOrder(moveItem(sorted.map((i) => i.id), index, to))
+    }
+
+    function handleRowDragOver(index: number, e: React.DragEvent) {
+        if (!dragId) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        const rect = e.currentTarget.getBoundingClientRect()
+        const edge: 'above' | 'below' = e.clientY < rect.top + rect.height / 2 ? 'above' : 'below'
+        setDropTarget((prev) =>
+            prev?.index === index && prev.edge === edge ? prev : { index, edge }
+        )
+    }
+
+    function clearDrag() {
+        setDragId(null)
+        setDragArmedId(null)
+        setDropTarget(null)
     }
 
     function handleDeleteConfirmed() {
@@ -328,35 +388,64 @@ export function SortableCrudList({
                 </Alert>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1.5" onDragLeave={(e) => {
+                // Solo limpiamos el indicador al salir del contenedor completo.
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropTarget(null)
+            }}>
                 {sorted.map((item, index) => {
                     const busy = isPending && busyId === item.id
+                    const thumbnail = thumbnailField ? String(item[thumbnailField] ?? '') : ''
+                    const isDragging = dragId === item.id
                     return (
-                        <Card key={item.id} className="flex items-center gap-3 p-3">
-                            <div className="flex flex-col">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    aria-label="Subir"
-                                    disabled={index === 0 || isPending}
-                                    onClick={() => handleMove(index, -1)}
-                                >
-                                    <ArrowUp className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    aria-label="Bajar"
-                                    disabled={index === sorted.length - 1 || isPending}
-                                    onClick={() => handleMove(index, 1)}
-                                >
-                                    <ArrowDown className="h-4 w-4" />
-                                </Button>
-                            </div>
+                        <Card
+                            key={item.id}
+                            draggable={dragArmedId === item.id}
+                            onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = 'move'
+                                e.dataTransfer.setData('text/plain', item.id)
+                                setDragId(item.id)
+                            }}
+                            onDragEnd={clearDrag}
+                            onDragOver={(e) => handleRowDragOver(index, e)}
+                            onDrop={(e) => {
+                                e.preventDefault()
+                                if (dropTarget?.index === index) handleDrop(index, dropTarget.edge)
+                            }}
+                            className={cn(
+                                'flex-row items-center gap-3 px-3 py-2 shadow-sm transition-opacity',
+                                isDragging && 'opacity-40',
+                                dropTarget?.index === index && dropTarget.edge === 'above' && 'border-t-[var(--brown-earth)]',
+                                dropTarget?.index === index && dropTarget.edge === 'below' && 'border-b-[var(--brown-earth)]'
+                            )}
+                        >
+                            <button
+                                type="button"
+                                aria-label={`Reordenar (posición ${index + 1} de ${sorted.length}; usá las flechas del teclado)`}
+                                title="Arrastrá para reordenar"
+                                disabled={isPending}
+                                onPointerDown={() => setDragArmedId(item.id)}
+                                onPointerUp={() => !dragId && setDragArmedId(null)}
+                                onKeyDown={(e) => handleReorderKey(index, e)}
+                                className="cursor-grab touch-none rounded-sm p-1 text-[var(--slate-gray)] hover:bg-[var(--soft-cream)] hover:text-[var(--brown-earth)] focus-visible:ring-2 focus-visible:ring-[var(--brown-earth)] focus-visible:outline-none active:cursor-grabbing disabled:opacity-50"
+                            >
+                                <GripVertical className="h-4 w-4" />
+                            </button>
+
+                            <span className="w-5 shrink-0 text-right text-xs tabular-nums text-[var(--slate-gray)]">
+                                {index + 1}
+                            </span>
+
+                            {thumbnailField && (
+                                <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-sm border border-[var(--beige-arena)] bg-[var(--soft-cream)]">
+                                    {thumbnail ? (
+                                        <Image src={thumbnail} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-[var(--slate-gray)]">
+                                            <ImageOff className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="min-w-0 flex-1">
                                 <p className={cn('truncate text-sm font-medium', item.isPublished ? 'text-[var(--brown-earth)]' : 'text-[var(--slate-gray)]')}>
@@ -369,29 +458,32 @@ export function SortableCrudList({
                                 )}
                             </div>
 
-                            {busy && <Loader2 className="h-4 w-4 animate-spin text-[var(--brown-earth)]" />}
+                            {busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--brown-earth)]" />}
 
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label={item.isPublished ? 'Ocultar' : 'Publicar'}
-                                title={item.isPublished ? 'Visible en la web' : 'Oculto'}
-                                disabled={isPending}
-                                onClick={() => handleTogglePublished(item)}
-                            >
-                                {item.isPublished ? (
-                                    <Eye className="h-4 w-4 text-[var(--green-moss)]" />
-                                ) : (
-                                    <EyeOff className="h-4 w-4 text-[var(--slate-gray)]" />
-                                )}
-                            </Button>
-                            <Button type="button" variant="ghost" size="icon" aria-label="Editar" disabled={isPending} onClick={() => openEdit(item)}>
-                                <Pencil className="h-4 w-4 text-[var(--brown-earth)]" />
-                            </Button>
-                            <Button type="button" variant="ghost" size="icon" aria-label="Eliminar" disabled={isPending} onClick={() => setDeleteTarget(item)}>
-                                <Trash2 className="h-4 w-4 text-[var(--terracotta)]" />
-                            </Button>
+                            <div className="flex shrink-0 items-center">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    aria-label={item.isPublished ? 'Ocultar' : 'Publicar'}
+                                    title={item.isPublished ? 'Visible en la web' : 'Oculto'}
+                                    disabled={isPending}
+                                    onClick={() => handleTogglePublished(item)}
+                                >
+                                    {item.isPublished ? (
+                                        <Eye className="h-4 w-4 text-[var(--green-moss)]" />
+                                    ) : (
+                                        <EyeOff className="h-4 w-4 text-[var(--slate-gray)]" />
+                                    )}
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar" disabled={isPending} onClick={() => openEdit(item)}>
+                                    <Pencil className="h-4 w-4 text-[var(--brown-earth)]" />
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Eliminar" disabled={isPending} onClick={() => setDeleteTarget(item)}>
+                                    <Trash2 className="h-4 w-4 text-[var(--terracotta)]" />
+                                </Button>
+                            </div>
                         </Card>
                     )
                 })}

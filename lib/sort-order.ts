@@ -1,25 +1,20 @@
 // Helper puro para reordenar listas del backoffice (FAQs, reseñas, galería).
-// Intercambia los valores de `sortOrder` de los items en `indexA`/`indexB`
+// Mueve el elemento en `from` a la posición `to` desplazando el resto,
 // devolviendo una copia nueva (no muta el original). Si los índices son
 // inválidos o iguales, devuelve el array original sin cambios.
-export function swapSortOrder<T extends { sortOrder: number }>(
-    items: T[],
-    indexA: number,
-    indexB: number
-): T[] {
+export function moveItem<T>(items: T[], from: number, to: number): T[] {
     if (
-        indexA === indexB ||
-        indexA < 0 ||
-        indexB < 0 ||
-        indexA >= items.length ||
-        indexB >= items.length
+        from === to ||
+        from < 0 ||
+        to < 0 ||
+        from >= items.length ||
+        to >= items.length
     ) {
         return items
     }
 
-    const next = items.map((item) => ({ ...item }))
-    const tmp = next[indexA].sortOrder
-    next[indexA].sortOrder = next[indexB].sortOrder
-    next[indexB].sortOrder = tmp
+    const next = [...items]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
     return next
 }

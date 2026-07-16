@@ -13,6 +13,9 @@ import {
     upsertGalleryItemAction,
     deleteGalleryItemAction,
     uploadGalleryImageAction,
+    reorderFaqsAction,
+    reorderReviewsAction,
+    reorderGalleryAction,
 } from '@/app/admin/(panel)/contenido/actions'
 import type { Faq, Review, GalleryItem } from '@/types/db'
 import type {
@@ -119,6 +122,7 @@ export function ContenidoTabs({
                     entityLabel="pregunta"
                     upsertAction={upsertFaqAction}
                     deleteAction={deleteFaqAction}
+                    reorderAction={reorderFaqsAction}
                 />
             )}
 
@@ -128,10 +132,12 @@ export function ContenidoTabs({
                     fields={REVIEW_FIELDS}
                     titleField="name"
                     subtitleField="location"
+                    thumbnailField="avatarUrl"
                     addLabel="Agregar reseña"
                     entityLabel="reseña"
                     upsertAction={upsertReviewAction}
                     deleteAction={deleteReviewAction}
+                    reorderAction={reorderReviewsAction}
                 />
             )}
 
@@ -141,10 +147,12 @@ export function ContenidoTabs({
                     fields={GALLERY_FIELDS}
                     titleField="title"
                     subtitleField="description"
+                    thumbnailField="imageUrl"
                     addLabel="Agregar imagen"
                     entityLabel="imagen"
                     upsertAction={upsertGalleryItemAction}
                     deleteAction={deleteGalleryItemAction}
+                    reorderAction={reorderGalleryAction}
                     uploadAction={uploadGalleryImageAction}
                 />
             )}

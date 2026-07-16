@@ -12,6 +12,8 @@ import {
     deleteReview,
     upsertGalleryItem,
     deleteGalleryItem,
+    reorderContent,
+    type ReorderableTable,
 } from '@/lib/db/content'
 import { uploadImageToBucket, type UploadResult } from '@/lib/actions/upload'
 import type { FaqInput, ReviewInput, GalleryItemInput } from '@/types/db'
@@ -21,6 +23,36 @@ export type ActionResult = { ok: true } | { ok: false; error: string }
 const GENERIC_ERROR = 'No se pudo completar la operación. Intentá nuevamente.'
 
 const idSchema = z.string().uuid()
+
+const reorderIdsSchema = z.array(idSchema).min(1).max(500)
+
+async function reorderAction(table: ReorderableTable, ids: unknown): Promise<ActionResult> {
+    await requireAdmin()
+
+    const parsed = reorderIdsSchema.safeParse(ids)
+    if (!parsed.success) return { ok: false, error: 'Orden inválido' }
+
+    try {
+        await reorderContent(table, parsed.data)
+    } catch {
+        return { ok: false, error: GENERIC_ERROR }
+    }
+
+    revalidateContentSurfaces()
+    return { ok: true }
+}
+
+export async function reorderFaqsAction(ids: unknown): Promise<ActionResult> {
+    return reorderAction('faqs', ids)
+}
+
+export async function reorderReviewsAction(ids: unknown): Promise<ActionResult> {
+    return reorderAction('reviews', ids)
+}
+
+export async function reorderGalleryAction(ids: unknown): Promise<ActionResult> {
+    return reorderAction('gallery_items', ids)
+}
 
 // Valores de `span` soportados por la grilla bento (Tailwind sólo compila las
 // clases presentes en el código: ver safelist en components/BentoGridGallery.tsx).

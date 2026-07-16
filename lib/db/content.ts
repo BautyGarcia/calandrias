@@ -256,3 +256,17 @@ export async function deleteGalleryItem(id: string): Promise<void> {
     const { error } = await supabase.from('gallery_items').delete().eq('id', id)
     if (error) throw new Error(`Error eliminando ítem de galería: ${error.message}`)
 }
+
+// ---------------------------------------------------------------
+// Reorden
+// ---------------------------------------------------------------
+
+export type ReorderableTable = 'faqs' | 'reviews' | 'gallery_items'
+
+// Renumera sort_order = posición (1-based) según el orden de `ids`, en un
+// único UPDATE atómico (función admin_reorder, migración 0004).
+export async function reorderContent(table: ReorderableTable, ids: string[]): Promise<void> {
+    const supabase = createAdminClient()
+    const { error } = await supabase.rpc('admin_reorder', { p_table: table, p_ids: ids })
+    if (error) throw new Error(`Error reordenando ${table}: ${error.message}`)
+}

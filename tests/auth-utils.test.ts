@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sanitizeRedirect } from '@/lib/auth-utils'
+import { parseAuthHashType, sanitizeRedirect } from '@/lib/auth-utils'
 
 describe('sanitizeRedirect', () => {
     const fallback = '/admin/reservas'
@@ -62,5 +62,31 @@ describe('sanitizeRedirect', () => {
 
     it('rejects a path with a NUL byte', () => {
         expect(sanitizeRedirect('/admin\x00', fallback)).toBe(fallback)
+    })
+})
+
+describe('parseAuthHashType', () => {
+    it('extrae type=invite de un hash de callback de Supabase', () => {
+        expect(parseAuthHashType('#access_token=abc&expires_in=3600&type=invite')).toBe('invite')
+    })
+
+    it('extrae type=recovery', () => {
+        expect(parseAuthHashType('#access_token=abc&type=recovery&token_type=bearer')).toBe('recovery')
+    })
+
+    it('devuelve null si el hash no trae type', () => {
+        expect(parseAuthHashType('#access_token=abc&expires_in=3600')).toBeNull()
+    })
+
+    it('devuelve null para hash vacío', () => {
+        expect(parseAuthHashType('')).toBeNull()
+    })
+
+    it('devuelve null si el string no empieza con #', () => {
+        expect(parseAuthHashType('type=invite')).toBeNull()
+    })
+
+    it('devuelve null si type está vacío', () => {
+        expect(parseAuthHashType('#type=&access_token=abc')).toBeNull()
     })
 })

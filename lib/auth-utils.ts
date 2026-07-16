@@ -26,3 +26,15 @@ export function sanitizeRedirect(raw: string | null, fallback: string): string {
     if (/[\x00-\x1f\x7f]/.test(raw)) return fallback
     return raw
 }
+
+/**
+ * Extrae el parámetro `type` del hash de un callback de Supabase Auth
+ * (`#access_token=…&type=invite`). Se usa para adaptar la copy de la página
+ * de reset según el flujo (invite vs recovery). Debe leerse ANTES de crear
+ * el cliente browser de Supabase, que consume y limpia el hash
+ * (detectSessionInUrl). Devuelve null si no hay hash válido o no trae type.
+ */
+export function parseAuthHashType(hash: string): string | null {
+    if (!hash.startsWith('#')) return null
+    return new URLSearchParams(hash.slice(1)).get('type') || null
+}

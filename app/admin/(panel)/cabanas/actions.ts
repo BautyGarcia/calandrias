@@ -5,17 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth'
 import { updateCabin, setAirbnbIcalUrl } from '@/lib/db/cabins'
 import { parseCabinForm, airbnbUrlSchema } from '@/lib/cabin-form'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadImageToBucket, type UploadResult } from '@/lib/actions/upload'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
-export type UploadResult = { ok: true; url: string } | { ok: false; error: string }
+export type { UploadResult }
 
 const GENERIC_ERROR = 'No se pudo completar la operación. Intentá nuevamente.'
 
 const idSchema = z.string().uuid()
-
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 
 // Revalida todas las superficies públicas que muestran datos de cabañas.
 function revalidateCabinSurfaces() {
@@ -50,7 +47,7 @@ export async function updateCabinAction(id: string, form: FormData): Promise<Act
     return { ok: true }
 }
 
-// Sube una imagen al bucket `images` y devuelve su URL pública.
+// Sube una imagen al bucket `images` bajo `cabins/{slug}/` y devuelve su URL pública.
 export async function uploadImageAction(form: FormData): Promise<UploadResult> {
     await requireAdmin()
 
@@ -61,30 +58,9 @@ export async function uploadImageAction(form: FormData): Promise<UploadResult> {
     if (typeof slugRaw !== 'string' || slugRaw.trim() === '') {
         return { ok: false, error: 'Falta la cabaña' }
     }
-    if (!ALLOWED_MIME.includes(file.type)) {
-        return { ok: false, error: 'Formato no permitido. Subí una imagen JPG, PNG o WEBP.' }
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-        return { ok: false, error: 'La imagen supera los 5 MB. Probá con una más liviana.' }
-    }
 
     const slug = slugRaw.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    const sanitizedName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, '')
-    const path = `cabins/${slug}/${Date.now()}-${sanitizedName || 'imagen'}`
-
-    try {
-        const supabase = createAdminClient()
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const { error } = await supabase.storage
-            .from('images')
-            .upload(path, buffer, { contentType: file.type, upsert: false })
-        if (error) return { ok: false, error: 'No se pudo subir la imagen. Intentá nuevamente.' }
-
-        const { data } = supabase.storage.from('images').getPublicUrl(path)
-        return { ok: true, url: data.publicUrl }
-    } catch {
-        return { ok: false, error: 'No se pudo subir la imagen. Intentá nuevamente.' }
-    }
+    return uploadImageToBucket(file, `cabins/${slug}`)
 }
 
 // Setea/limpia la URL iCal de Airbnb de una cabaña. `cabinId` = documentId (uuid).

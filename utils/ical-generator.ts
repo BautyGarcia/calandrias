@@ -68,10 +68,24 @@ function generateICalEvent(reservation: LocalReservation): string[] {
 
 /**
  * Formatea una fecha para iCal
+ *
+ * Las fechas de checkIn/checkOut llegan como `new Date(row.check_in)`, donde
+ * `row.check_in` es un string `YYYY-MM-DD` (ver `rowToReservation` en
+ * lib/db/reservations.ts). JS parsea ese string como MEDIANOCHE UTC. Si acá
+ * se formatea usando getters locales (o `date-fns` `format`, que usa hora
+ * local), en un servidor con TZ != UTC (ej. America/Argentina/Buenos_Aires,
+ * UTC-3) el día calendario se corre uno para atrás: DTSTART termina un día
+ * antes del check-in real, y Airbnb bloquea/libera la noche equivocada.
+ *
+ * Por eso el path `allDay` (VALUE=DATE) usa los getters UTC del propio Date
+ * para reconstruir el mismo día calendario con el que fue parseado.
  */
 function formatICalDate(date: Date, allDay: boolean = false): string {
     if (allDay) {
-        return format(date, 'yyyyMMdd')
+        const year = date.getUTCFullYear()
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+        const day = String(date.getUTCDate()).padStart(2, '0')
+        return `${year}${month}${day}`
     }
     return format(date, "yyyyMMdd'T'HHmmss'Z'")
 }

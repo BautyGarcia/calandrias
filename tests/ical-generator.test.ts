@@ -54,3 +54,40 @@ describe('generateICalForCabin (feed público redactado)', () => {
         expect(ical).toContain('SUMMARY:No disponible')
     })
 })
+
+// `rowToReservation` (lib/db/reservations.ts) construye checkIn/checkOut con
+// `new Date(row.check_in)` a partir de un string `YYYY-MM-DD` proveniente de
+// la base de datos. JS parsea ese string como medianoche UTC. Si el feed se
+// genera en un servidor con TZ != UTC (ej. America/Argentina/Buenos_Aires,
+// UTC-3), formatear esa fecha en hora LOCAL corre el día un día para atrás.
+const utcMidnightReservation: LocalReservation = {
+    id: 'res-2',
+    documentId: 'res-2',
+    cabinId: 'retiro-exclusivo',
+    checkIn: new Date('2035-12-20'), // medianoche UTC (shape real de rowToReservation)
+    checkOut: new Date('2035-12-25'),
+    guestName: 'Ana Gómez',
+    guestEmail: 'ana@example.com',
+    guests: 3,
+    pets: 0,
+    state: 'confirmed',
+    source: 'direct',
+    reservationCode: 'CAL-UTC1',
+    totalPrice: 123456,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+} as unknown as LocalReservation
+
+describe('generateICalForCabin (fechas UTC-medianoche, shape real de rowToReservation)', () => {
+    const ical = generateICalForCabin([utcMidnightReservation], 'Las Calandrias de Tandil 1')
+
+    it('NO corre el DTSTART un día para atrás por la zona horaria local', () => {
+        expect(ical).toContain('DTSTART;VALUE=DATE:20351220')
+        expect(ical).not.toContain('DTSTART;VALUE=DATE:20351219')
+    })
+
+    it('NO corre el DTEND un día para atrás por la zona horaria local', () => {
+        expect(ical).toContain('DTEND;VALUE=DATE:20351225')
+        expect(ical).not.toContain('DTEND;VALUE=DATE:20351224')
+    })
+})

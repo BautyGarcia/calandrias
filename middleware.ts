@@ -12,13 +12,18 @@ export async function middleware(request: NextRequest) {
     const host = request.headers.get('host') ?? ''
     const isAdminHost = host.startsWith(ADMIN_HOST_PREFIX)
 
+    // Colapsamos slashes repetidos (`//admin/x`, `///admin/x`) antes de cualquier
+    // decisión: el gate y el rewrite no deben depender de si Next normaliza o no
+    // el path por su cuenta antes de invocar el middleware.
+    const pathname = url.pathname.replace(/\/{2,}/g, '/')
+
     // En el host admin, admin.<dominio>/foo mapea a /admin/foo (transparente).
     // Un request directo a /admin/... (en cualquier host) ya es el path efectivo,
     // por lo que nunca generamos /admin/admin/...
-    const needsRewrite = isAdminHost && !url.pathname.startsWith('/admin')
+    const needsRewrite = isAdminHost && !pathname.startsWith('/admin')
     const effectivePath = needsRewrite
-        ? `/admin${url.pathname === '/' ? '' : url.pathname}`
-        : url.pathname
+        ? `/admin${pathname === '/' ? '' : pathname}`
+        : pathname
 
     // Solo /admin/* se protege; el resto del sitio pasa sin tocar Supabase.
     if (!effectivePath.startsWith('/admin')) {
@@ -52,7 +57,7 @@ export async function middleware(request: NextRequest) {
     )
     const { data: { user } } = await supabase.auth.getUser()
 
-    const isPublicAdminPath = PUBLIC_ADMIN_PATHS.some((p) => effectivePath.startsWith(p))
+    const isPublicAdminPath = PUBLIC_ADMIN_PATHS.some((p) => effectivePath === p || effectivePath.startsWith(p + '/'))
     if (!user && !isPublicAdminPath) {
         const loginUrl = url.clone()
         // En el host admin la URL visible es /login (se reescribe a /admin/login);

@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase/client'
+import { sanitizeRedirect } from '@/lib/auth-utils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,7 +41,7 @@ function AdminLoginForm() {
 
             // Las cookies ya fueron seteadas por el cliente de @supabase/ssr.
             // Navegación completa para que el middleware vea las cookies frescas.
-            const redirectTo = searchParams.get('redirect') || '/admin/reservas'
+            const redirectTo = sanitizeRedirect(searchParams.get('redirect'), '/admin/reservas')
             window.location.assign(redirectTo)
         } catch {
             setError('Error de conexión. Intentá nuevamente.')

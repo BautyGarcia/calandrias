@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { getCabins } from '@/lib/db/cabins'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://las-calandrias.com'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://calandrias.com.ar'
 
     // Páginas estáticas principales
     const staticPages: MetadataRoute.Sitemap = [

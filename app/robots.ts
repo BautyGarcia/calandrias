@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://calandrias.com.ar'
+
     return {
         rules: [
             {
@@ -40,7 +42,7 @@ export default function robots(): MetadataRoute.Robots {
                 ],
             },
         ],
-        sitemap: 'https://las-calandrias.com/sitemap.xml',
-        host: 'https://las-calandrias.com',
+        sitemap: `${baseUrl}/sitemap.xml`,
+        host: baseUrl,
     }
 } 

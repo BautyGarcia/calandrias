@@ -52,14 +52,14 @@ export async function generateMetadata(): Promise<Metadata> {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://las-calandrias.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://calandrias.com.ar'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'es_AR',
-    url: 'https://las-calandrias.com',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://calandrias.com.ar',
     title,
     description,
     siteName: 'Las Calandrias',

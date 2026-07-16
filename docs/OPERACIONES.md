@@ -137,7 +137,7 @@ Los textos e imágenes del sitio público:
 
 Para verificar entre el desarrollador y el cliente antes/después de publicar.
 
-> **Nota sobre secretos:** por decisión del usuario, **no se rotan** los secretos de MercadoPago, Resend ni el `CRON_SECRET`. Se **reutilizan los existentes**.
+> **Nota sobre secretos:** por decisión del usuario, **no se rotan** los secretos de MercadoPago ni el `CRON_SECRET`; se reutilizan los existentes. La key de **Resend sí fue rotada** (2026-07-16, key nueva de "solo envío"): usar la del `.env` actual, que también está cargada como SMTP de Supabase Auth.
 
 - [ ] **Variables de entorno en Vercel** cargadas exactamente con la lista de la Parte 1:
       `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,

@@ -4,7 +4,6 @@ import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Upload, Loader2, ImageOff } from 'lucide-react'
 import { uploadImageAction } from '@/app/admin/(panel)/cabanas/actions'
 
@@ -15,8 +14,8 @@ interface ImageUploadFieldProps {
     onChange: (url: string) => void
 }
 
-// Campo de imagen: preview + subida a Storage (via uploadImageAction) + edición
-// manual de la URL. La URL resultante se guarda en el estado del formulario.
+// Campo de imagen: preview + subida a Storage (via uploadImageAction).
+// La URL resultante se guarda en el estado del formulario.
 export function ImageUploadField({ label, slug, value, onChange }: ImageUploadFieldProps) {
     const inputRef = useRef<HTMLInputElement>(null)
     const [error, setError] = useState('')
@@ -81,12 +80,6 @@ export function ImageUploadField({ label, slug, value, onChange }: ImageUploadFi
                         Subir imagen
                     </Button>
                     <p className="text-xs text-[var(--slate-gray)]">JPG, PNG o WEBP. Hasta 5 MB.</p>
-                    <Input
-                        value={value}
-                        onChange={(e) => onChange(e.target.value)}
-                        placeholder="o pegá una URL de imagen"
-                        className="text-xs"
-                    />
                 </div>
             </div>
 

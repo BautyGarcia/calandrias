@@ -165,7 +165,6 @@ function ImageDraftField({
                         </span>
                     </label>
                     <p className="text-xs text-[var(--slate-gray)]">JPG, PNG o WEBP. Hasta 5 MB.</p>
-                    <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="o pegá una URL de imagen" className="text-xs" />
                 </div>
             </div>
             {error && <p className="text-xs text-[var(--terracotta)]">{error}</p>}

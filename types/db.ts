@@ -27,7 +27,9 @@ export interface Reservation {
     currency?: string
     specialRequests?: string
     mpPaymentId?: string
+    mpPreferenceId?: string
     paymentStatus?: PaymentStatus
+    paymentMethod?: string
     paidAmount?: number
     paymentDate?: Date
     createdAt: Date
@@ -52,7 +54,9 @@ export interface ReservationInput {
     currency?: string
     specialRequests?: string
     mpPaymentId?: string
+    mpPreferenceId?: string
     paymentStatus?: PaymentStatus
+    paymentMethod?: string
     paidAmount?: number
     paymentDate?: string
 }

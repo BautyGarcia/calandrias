@@ -28,7 +28,9 @@ export interface ReservationRow {
     currency: string
     special_requests: string | null
     mp_payment_id: string | null
+    mp_preference_id: string | null
     payment_status: string | null
+    payment_method: string | null
     paid_amount: number | null
     payment_date: string | null
     created_at: string
@@ -63,7 +65,9 @@ export function rowToReservation(row: ReservationRow): Reservation {
         currency: row.currency ?? undefined,
         specialRequests: row.special_requests ?? undefined,
         mpPaymentId: row.mp_payment_id ?? undefined,
+        mpPreferenceId: row.mp_preference_id ?? undefined,
         paymentStatus: (row.payment_status as PaymentStatus | null) ?? undefined,
+        paymentMethod: row.payment_method ?? undefined,
         paidAmount: row.paid_amount ?? undefined,
         paymentDate: row.payment_date ? new Date(row.payment_date) : undefined,
         createdAt: new Date(row.created_at),
@@ -89,7 +93,9 @@ export function reservationToRow(input: ReservationInput): ReservationWriteRow {
         currency: input.currency ?? 'ARS',
         special_requests: input.specialRequests ?? null,
         mp_payment_id: input.mpPaymentId ?? null,
+        mp_preference_id: input.mpPreferenceId ?? null,
         payment_status: input.paymentStatus ?? null,
+        payment_method: input.paymentMethod ?? null,
         paid_amount: input.paidAmount ?? null,
         payment_date: input.paymentDate ?? null,
     }
@@ -114,7 +120,9 @@ function reservationPatchToRow(patch: Partial<ReservationInput>): Partial<Reserv
     if (patch.currency !== undefined) row.currency = patch.currency ?? 'ARS'
     if (patch.specialRequests !== undefined) row.special_requests = patch.specialRequests ?? null
     if (patch.mpPaymentId !== undefined) row.mp_payment_id = patch.mpPaymentId ?? null
+    if (patch.mpPreferenceId !== undefined) row.mp_preference_id = patch.mpPreferenceId ?? null
     if (patch.paymentStatus !== undefined) row.payment_status = patch.paymentStatus ?? null
+    if (patch.paymentMethod !== undefined) row.payment_method = patch.paymentMethod ?? null
     if (patch.paidAmount !== undefined) row.paid_amount = patch.paidAmount ?? null
     if (patch.paymentDate !== undefined) row.payment_date = patch.paymentDate ?? null
     return row

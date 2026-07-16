@@ -38,6 +38,8 @@ export interface WebhookPaymentInfo {
     paymentId: string
     transactionAmount: number
     dateApproved?: string
+    /** `payment_method_id` del pago de MP (ej. 'credit_card', 'account_money'). */
+    paymentMethodId?: string
 }
 
 function asString(value: unknown): string {
@@ -83,6 +85,7 @@ export function metadataToReservationInput(
         input.paidAmount = payment.transactionAmount
         input.totalPrice = payment.transactionAmount
         input.paymentDate = payment.dateApproved
+        input.paymentMethod = payment.paymentMethodId
     }
 
     return input

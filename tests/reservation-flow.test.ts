@@ -102,12 +102,22 @@ describe('metadataToReservationInput', () => {
             paymentId: 'mp_123',
             transactionAmount: 120000,
             dateApproved: '2026-07-15T12:00:00.000Z',
+            paymentMethodId: 'credit_card',
         })
         expect(input.mpPaymentId).toBe('mp_123')
         expect(input.paymentStatus).toBe('approved')
         expect(input.paidAmount).toBe(120000)
         expect(input.totalPrice).toBe(120000)
         expect(input.paymentDate).toBe('2026-07-15T12:00:00.000Z')
+        expect(input.paymentMethod).toBe('credit_card')
+    })
+
+    it('deja paymentMethod undefined si el pago no trae payment_method_id', () => {
+        const input = metadataToReservationInput(md, {
+            paymentId: 'mp_123',
+            transactionAmount: 120000,
+        })
+        expect(input.paymentMethod).toBeUndefined()
     })
 
     it('usa defaults seguros: guests >= 1 y pets = 0', () => {

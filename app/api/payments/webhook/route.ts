@@ -91,6 +91,10 @@ export async function POST(request: NextRequest) {
                     paymentId: paymentData.id,
                     transactionAmount: paymentData.transaction_amount,
                     dateApproved: paymentData.date_approved || new Date().toISOString(),
+                    // MP no expone `preference_id` en el objeto de pago (sólo `order.id`,
+                    // que es el merchant order, no la preferencia). Sólo se puede
+                    // completar `paymentMethod` con lo que sí trae el pago.
+                    paymentMethodId: paymentData.payment_method_id || undefined,
                 });
                 reservationInput.reservationCode = generateReservationCode();
 

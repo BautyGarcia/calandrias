@@ -22,7 +22,9 @@ const fullRow = {
     currency: 'ARS',
     special_requests: 'llegada tarde',
     mp_payment_id: 'mp-999',
+    mp_preference_id: 'pref-888',
     payment_status: 'approved',
+    payment_method: 'credit_card',
     paid_amount: 50000,
     payment_date: '2026-01-05T12:00:00.000Z',
     created_at: '2026-01-01T00:00:00.000Z',
@@ -50,7 +52,9 @@ describe('rowToReservation', () => {
         expect(r.currency).toBe('ARS')
         expect(r.specialRequests).toBe('llegada tarde')
         expect(r.mpPaymentId).toBe('mp-999')
+        expect(r.mpPreferenceId).toBe('pref-888')
         expect(r.paymentStatus).toBe('approved')
+        expect(r.paymentMethod).toBe('credit_card')
         expect(r.paidAmount).toBe(50000)
         expect(r.paymentDate).toBeInstanceOf(Date)
         expect(r.paymentDate!.toISOString()).toBe('2026-01-05T12:00:00.000Z')
@@ -77,7 +81,9 @@ describe('rowToReservation', () => {
             currency: 'ARS',
             special_requests: null,
             mp_payment_id: null,
+            mp_preference_id: null,
             payment_status: null,
+            payment_method: null,
             paid_amount: null,
             payment_date: null,
             created_at: '2026-01-01T00:00:00.000Z',
@@ -90,7 +96,9 @@ describe('rowToReservation', () => {
         expect(r.totalPrice).toBeUndefined()
         expect(r.specialRequests).toBeUndefined()
         expect(r.mpPaymentId).toBeUndefined()
+        expect(r.mpPreferenceId).toBeUndefined()
         expect(r.paymentStatus).toBeUndefined()
+        expect(r.paymentMethod).toBeUndefined()
         expect(r.paidAmount).toBeUndefined()
         expect(r.paymentDate).toBeUndefined()
     })
@@ -115,7 +123,9 @@ describe('reservationToRow', () => {
             currency: 'ARS',
             specialRequests: 'llegada tarde',
             mpPaymentId: 'mp-999',
+            mpPreferenceId: 'pref-888',
             paymentStatus: 'approved',
+            paymentMethod: 'credit_card',
             paidAmount: 50000,
             paymentDate: '2026-01-05T12:00:00.000Z',
         }
@@ -136,7 +146,9 @@ describe('reservationToRow', () => {
         expect(row.currency).toBe('ARS')
         expect(row.special_requests).toBe('llegada tarde')
         expect(row.mp_payment_id).toBe('mp-999')
+        expect(row.mp_preference_id).toBe('pref-888')
         expect(row.payment_status).toBe('approved')
+        expect(row.payment_method).toBe('credit_card')
         expect(row.paid_amount).toBe(50000)
         expect(row.payment_date).toBe('2026-01-05T12:00:00.000Z')
         expect('id' in row).toBe(false)
@@ -163,7 +175,9 @@ describe('reservationToRow', () => {
         expect(row.total_price).toBeNull()
         expect(row.special_requests).toBeNull()
         expect(row.mp_payment_id).toBeNull()
+        expect(row.mp_preference_id).toBeNull()
         expect(row.payment_status).toBeNull()
+        expect(row.payment_method).toBeNull()
         expect(row.paid_amount).toBeNull()
         expect(row.payment_date).toBeNull()
     })
@@ -188,7 +202,9 @@ describe('round-trip reservationToRow -> rowToReservation', () => {
             currency: 'ARS',
             specialRequests: 'llegada tarde',
             mpPaymentId: 'mp-999',
+            mpPreferenceId: 'pref-888',
             paymentStatus: 'approved',
+            paymentMethod: 'credit_card',
             paidAmount: 50000,
         }
         const dbRow = {
@@ -206,6 +222,8 @@ describe('round-trip reservationToRow -> rowToReservation', () => {
         expect(r.reservationCode).toBe(input.reservationCode)
         expect(r.totalPrice).toBe(input.totalPrice)
         expect(r.mpPaymentId).toBe(input.mpPaymentId)
+        expect(r.mpPreferenceId).toBe(input.mpPreferenceId)
+        expect(r.paymentMethod).toBe(input.paymentMethod)
     })
 })
 

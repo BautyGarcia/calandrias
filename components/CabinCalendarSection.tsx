@@ -21,7 +21,7 @@ interface CabinCalendarSectionProps {
 }
 
 export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProps) {
-  const { events, loading, error, syncing, refreshStrapiOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
+  const { events, loading, error, syncing, refreshAvailabilityOnly, refreshEvents } = useCalendarData({ cabinId: cabin.slug })
   const { isLoading: isSubmittingReservation } = useReservations()
   const [isAutoLoaded, setIsAutoLoaded] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange>({ from: null, to: null })
@@ -54,7 +54,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
   }, [loading, syncing, isAutoLoaded, events.length])
 
   // Auto-load calendar data when component mounts
-  // Note: iCal URLs ahora se manejan en backend via Strapi
+  // Note: iCal URLs ahora se manejan en el backend
   useEffect(() => {
     if (!isAutoLoaded && !loading) {
       const loadData = async () => {
@@ -64,8 +64,8 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
             // Usar refreshEvents que sí ejecuta syncAirbnb
             await refreshEvents()
           } else {
-            // Si no hay cabinId, solo cargar reservas de Strapi
-            await refreshStrapiOnly()
+            // Si no hay cabinId, solo cargar la disponibilidad
+            await refreshAvailabilityOnly()
           }
 
           setIsAutoLoaded(true)
@@ -77,9 +77,9 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
 
       loadData()
     }
-  }, [isAutoLoaded, loading, cabin.slug, refreshEvents, refreshStrapiOnly])
+  }, [isAutoLoaded, loading, cabin.slug, refreshEvents, refreshAvailabilityOnly])
 
-  // Usar directamente el slug de Strapi como cabinId para que coincida con los eventos
+  // Usar directamente el slug de la cabaña como cabinId para que coincida con los eventos
   const cabinIdForCalendar = cabin.slug
 
   // Calculate pricing with weekday discount and monthly overrides
@@ -135,18 +135,18 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
       console.error('Error submitting reservation for payment:', error);
 
       // Refrescar en caso de error para mostrar conflictos actualizados
-      await refreshStrapiOnly();
+      await refreshAvailabilityOnly();
 
       // Re-lanzar el error para que el formulario lo maneje
       throw error;
     }
-  }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, pricePerNight, refreshStrapiOnly])
+  }, [selectedRange.from, selectedRange.to, cabin.slug, cabin.name, totalPrice, pricePerNight, refreshAvailabilityOnly])
 
   const handleBackToCalendar = useCallback(() => {
-    // Actualizar reservas de Strapi antes de volver para mostrar cambios recientes
-    refreshStrapiOnly()
+    // Actualizar la disponibilidad antes de volver para mostrar cambios recientes
+    refreshAvailabilityOnly()
     setCurrentStep('calendar')
-  }, [refreshStrapiOnly])
+  }, [refreshAvailabilityOnly])
 
   return (
     <section className="py-16 bg-[var(--soft-cream)]">
@@ -315,7 +315,7 @@ export default function CabinCalendarSection({ cabin }: CabinCalendarSectionProp
               <div className="lg:col-span-2">
                 <ReservationForm
                   onSubmit={handleReservationSubmit}
-                  onCalendarRefresh={refreshStrapiOnly}
+                  onCalendarRefresh={refreshAvailabilityOnly}
                   isLoading={isSubmittingReservation}
                   maxGuests={parseInt(cabin.capacity)}
                 />

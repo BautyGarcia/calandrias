@@ -8,7 +8,7 @@ import type {
 import type { CabinInput } from '@/types/db'
 
 // Shapes nativos de las columnas jsonb en Postgres (sin los `id` sintéticos
-// que el tipo de la app arrastra desde Strapi).
+// que el tipo de la app arrastra por compatibilidad histórica).
 interface CabinFeatureRow {
     icon: string
     label: string
@@ -57,7 +57,7 @@ export interface CabinRow {
 // ---------------------------------------------------------------
 
 // La app conserva el tipo `Cabin`: el uuid de la DB vive en `documentId`
-// (semántica Strapi v5); `id` numérico se deriva de `sort_order`.
+// (compatibilidad histórica); `id` numérico se deriva de `sort_order`.
 export function rowToCabin(row: CabinRow): Cabin {
     return {
         id: row.sort_order,
@@ -72,7 +72,7 @@ export function rowToCabin(row: CabinRow): Cabin {
         bathrooms: row.bathrooms,
         image: { url: row.image_url ?? '' },
         thumbnail: { url: row.thumbnail_url ?? '' },
-        // Los `id` numéricos son sintéticos (el tipo app viene de Strapi; en la DB no existen).
+        // Los `id` numéricos son sintéticos (compatibilidad histórica; en la DB no existen).
         features: (row.features ?? []).map((f, i) => ({
             id: i,
             icon: f.icon as CabinFeatureIcon,

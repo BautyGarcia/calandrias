@@ -6,6 +6,7 @@ import type {
     PaymentStatus
 } from '@/types/payment';
 import { createHmac } from 'crypto';
+import { buildPreferenceMetadata } from '@/lib/payments/metadata';
 
 // Configuración de MercadoPago
 const accessToken = process.env.MP_ACCESS_TOKEN;
@@ -95,21 +96,9 @@ export const paymentApi = {
             },
             notification_url: `${baseUrl}/api/payments/webhook`,
             external_reference: reservationData.reservationId || `temp-${Date.now()}`,
-            metadata: {
-                // Toda la información de la reserva en metadata
-                reservationId: reservationData.reservationId,
-                cabinId: reservationData.cabinId,
-                cabinName: reservationData.cabinName,
-                checkIn: reservationData.checkIn,
-                checkOut: reservationData.checkOut,
-                guests: reservationData.guests.toString(),
-                guestName: reservationData.guestName,
-                guestEmail: reservationData.guestEmail,
-                guestPhone: reservationData.guestPhone || '',
-                specialRequests: reservationData.specialRequests || '',
-                totalAmount: reservationData.totalAmount.toString(),
-                pricePerNight: reservationData.pricePerNight?.toString() || '',
-            },
+            // Toda la información de la reserva viaja en metadata (camelCase).
+            // MP la convierte a snake_case del lado del webhook. Incluye `pets`.
+            metadata: buildPreferenceMetadata(reservationData),
         };
 
         const result = await preference.create({ body: preferenceBody });

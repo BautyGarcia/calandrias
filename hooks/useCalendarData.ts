@@ -57,7 +57,7 @@ export function useCalendarData({ cabinId }: UseCalendarDataProps = {}) {
     // `syncing` se conserva por compatibilidad; ya no hay sync de Airbnb en el cliente.
     syncing: false,
     refreshEvents: loadAvailability,
-    refreshStrapiOnly: loadAvailability,
+    refreshAvailabilityOnly: loadAvailability,
     clearData,
   }
 }

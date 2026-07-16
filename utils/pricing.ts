@@ -75,7 +75,7 @@ export function calculatePriceWithWeekdayDiscount(
 
 /**
  * Calcula el precio para un rango de fechas considerando overrides mensuales
- * @param cabin Datos de la cabaña desde Strapi
+ * @param cabin Datos de la cabaña desde la base de datos
  * @param checkIn Fecha de check-in
  * @param checkOut Fecha de check-out
  * @returns Desglose completo de precios con descuentos y overrides aplicados
@@ -165,7 +165,7 @@ export function calculatePriceForDateRange(
 /**
  * Obtiene el precio mínimo de una cabaña considerando todos los meses
  * Útil para mostrar "desde: $X" en las cards
- * @param cabin Datos de la cabaña desde Strapi
+ * @param cabin Datos de la cabaña desde la base de datos
  * @returns Precio mínimo por noche (ya con descuento de día de semana aplicado)
  */
 export function getMinimumPrice(cabin: Cabin): number {

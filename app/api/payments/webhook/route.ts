@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { paymentApi } from '@/lib/mercadopago'
-import { StrapiAPI } from '@/lib/strapi'
+import { createReservation, generateReservationCode } from '@/lib/db/reservations'
+import { metadataToReservationInput } from '@/lib/payments/metadata'
 import { EmailService } from '@/lib/email-service'
 import { ReservationConfirmationData } from '@/emails/templates/ReservationConfirmation'
 import type { PaymentNotification } from '@/types/payment'
+import type { ReservationInput } from '@/types/db'
 
 export async function POST(request: NextRequest) {
     try {
@@ -64,8 +66,8 @@ export async function POST(request: NextRequest) {
         // Obtener información del pago desde MercadoPago
         const paymentId = notification.data.id;
         const paymentData = await paymentApi.getPayment(paymentId);
-        
-        // Obtener datos de la reserva desde metadata
+
+        // Obtener datos de la reserva desde metadata (snake_case, como llega de MP)
         const metadata = paymentData.metadata;
 
         if (!metadata || !metadata.cabin_id || !metadata.guest_name || !metadata.guest_email) {
@@ -73,8 +75,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid payment metadata' }, { status: 400 });
         }
 
-        // Procesar según el estado del pago
-        const strapiApi = new StrapiAPI();
         let result: {
             status: string;
             reservationId?: string;
@@ -82,104 +82,109 @@ export async function POST(request: NextRequest) {
             amount?: number;
             paymentId?: string;
             message?: string;
-            conflictingReservations?: string[];
         } = { status: 'processing' };
 
         switch (paymentData.status) {
-            case 'approved':
-                // Crear reserva confirmada cuando el pago es aprobado
-                const reservationData = {
-                    cabinId: metadata.cabin_id,
-                    checkIn: metadata.check_in,
-                    checkOut: metadata.check_out,
-                    guestName: metadata.guest_name,
-                    guestEmail: metadata.guest_email,
-                    guestPhone: metadata.guest_phone || '',
-                    guests: parseInt(metadata.guests) || 1,
-                    pets: parseInt(metadata.pets) || 0, 
-                    specialRequests: metadata.special_requests || '',
-                    totalPrice: paymentData.transaction_amount,
-                    currency: 'ARS',
-                    state: 'confirmed' as const,
-                    source: 'direct' as const,
-                    // Datos del pago
-                    paymentStatus: 'approved' as const,
-                    mpPaymentId: paymentData.id,
-                    paymentMethod: paymentData.payment_method_id,
-                    paidAmount: paymentData.transaction_amount,
-                    paymentDate: paymentData.date_approved || new Date().toISOString(),
+            case 'approved': {
+                // Construir la reserva confirmada a partir del metadata + datos del pago.
+                const reservationInput: ReservationInput = metadataToReservationInput(metadata, {
+                    paymentId: paymentData.id,
+                    transactionAmount: paymentData.transaction_amount,
+                    dateApproved: paymentData.date_approved || new Date().toISOString(),
+                });
+                reservationInput.reservationCode = generateReservationCode();
+
+                let createdReservation: Awaited<ReturnType<typeof createReservation>> | null = null;
+
+                try {
+                    // La constraint de solapamiento traduce el conflicto a Error('DATE_CONFLICT').
+                    createdReservation = await createReservation(reservationInput);
+                } catch (createError) {
+                    const isConflict = createError instanceof Error && createError.message === 'DATE_CONFLICT';
+
+                    if (!isConflict) {
+                        // Error no relacionado a fechas: NUNCA perder un pago aprobado.
+                        // Fallback a reserva pendiente para revisión manual.
+                        console.error('❌ Error creating confirmed reservation, falling back to pending:', createError);
+                    } else {
+                        console.error('❌ Date conflict during payment confirmation, falling back to pending review');
+                    }
+
+                    // Fallback: registrar la reserva como `pending` para no perder el pago.
+                    const pendingInput: ReservationInput = {
+                        ...reservationInput,
+                        state: 'pending',
+                        specialRequests: `CONFLICTO DE FECHAS - revisar. ${reservationInput.specialRequests ?? ''}`.trim(),
+                    };
+
+                    try {
+                        createdReservation = await createReservation(pendingInput);
+                        console.warn('⚠️ Paid reservation stored as PENDING for manual review:', {
+                            reservationId: createdReservation.id,
+                            paymentId: paymentData.id,
+                        });
+                    } catch (fallbackError) {
+                        // Si hasta el fallback pendiente falla, logueamos fuerte y devolvemos 200.
+                        // Un 500 haría que MP reintente indefinidamente; el pago igual es
+                        // recuperable desde el dashboard de MercadoPago con este paymentId.
+                        console.error('🚨 CRITICAL: could not persist paid reservation (confirmed AND pending failed). Recover manually from MP dashboard.', {
+                            paymentId: paymentData.id,
+                            amount: paymentData.transaction_amount,
+                            metadata,
+                            error: fallbackError,
+                        });
+                        return NextResponse.json(
+                            {
+                                status: 'reservation_persist_failed',
+                                message: 'Payment approved but reservation could not be persisted; recover from MP dashboard',
+                                paymentId: paymentData.id,
+                            },
+                            { status: 200 }
+                        );
+                    }
+                }
+
+                const isConfirmed = createdReservation.state === 'confirmed';
+                result = {
+                    status: isConfirmed ? 'reservation_created' : 'reservation_pending_conflict',
+                    reservationId: createdReservation.id,
+                    paymentStatus: 'approved',
+                    amount: paymentData.transaction_amount,
                 };
 
-                // Verificar disponibilidad nuevamente antes de crear
-                const existingReservations = await strapiApi.getReservations();
-                const checkInDate = new Date(metadata.check_in);
-                const checkOutDate = new Date(metadata.check_out);
+                console.log(
+                    isConfirmed
+                        ? '✅ Reservation created successfully:'
+                        : '⚠️ Reservation stored as pending (conflict):',
+                    createdReservation.id,
+                );
 
-                const conflicts = existingReservations.filter(reservation => {
-                    if (reservation.cabinId !== metadata.cabin_id) return false;
-                    if (reservation.state === 'cancelled') return false;
-
-                    const resCheckIn = new Date(reservation.checkIn);
-                    const resCheckOut = new Date(reservation.checkOut);
-
-                    return (checkInDate < resCheckOut && checkOutDate > resCheckIn);
-                });
-
-                if (conflicts.length > 0) {
-                    console.error('❌ Date conflict detected during payment confirmation');
-                    result = {
-                        status: 'conflict_detected',
-                        message: 'Payment approved but dates no longer available',
-                        paymentId: paymentData.id,
-                        conflictingReservations: conflicts.map(c => c.id.toString())
-                    };
-                } else {
+                // 📧 Enviar email de confirmación sólo si la reserva quedó confirmada.
+                if (isConfirmed) {
                     try {
-                        // Crear la reserva
-                        const createdReservation = await strapiApi.createReservation(reservationData);
-
-                        result = {
-                            status: 'reservation_created',
-                            reservationId: createdReservation.documentId,
-                            paymentStatus: 'approved',
-                            amount: paymentData.transaction_amount
+                        const emailData: ReservationConfirmationData = {
+                            guestName: String(metadata.guest_name),
+                            guestEmail: String(metadata.guest_email),
+                            cabinName: String(metadata.cabin_name || `Cabaña ${metadata.cabin_id}`),
+                            checkIn: new Date(String(metadata.check_in)),
+                            checkOut: new Date(String(metadata.check_out)),
+                            totalPrice: paymentData.transaction_amount,
+                            reservationCode: createdReservation.reservationCode || createdReservation.id,
+                            paymentId: paymentData.id,
                         };
 
-                        console.log('✅ Reservation created successfully:', createdReservation.documentId);
+                        await EmailService.sendReservationConfirmation(emailData, {
+                            to: String(metadata.guest_email),
+                        });
 
-                        // 📧 Enviar email de confirmación
-                        try {
-                            const emailData: ReservationConfirmationData = {
-                                guestName: metadata.guest_name,
-                                guestEmail: metadata.guest_email,
-                                cabinName: metadata.cabin_name || `Cabaña ${metadata.cabin_id}`,
-                                checkIn: new Date(metadata.check_in),
-                                checkOut: new Date(metadata.check_out),
-                                totalPrice: paymentData.transaction_amount,
-                                reservationCode: createdReservation.reservationCode || createdReservation.documentId,
-                                paymentId: paymentData.id,
-                                pricePerNight: metadata.price_per_night ? parseFloat(metadata.price_per_night) : undefined
-                            };
-
-                            await EmailService.sendReservationConfirmation(emailData, {
-                                to: metadata.guest_email
-                            });
-
-                            console.log('✅ Confirmation email sent successfully to:', metadata.guest_email);
-                        } catch (emailError) {
-                            // No fallar el webhook por errores de email - la reserva ya está creada
-                            console.error('❌ Failed to send confirmation email (reservation still valid):', emailError);
-                        }
-                    } catch (strapiError) {
-                        console.error('❌ Error creating reservation in Strapi:', strapiError);
-                        result = {
-                            status: 'strapi_error',
-                            message: 'Payment approved but reservation creation failed',
-                            paymentId: paymentData.id
-                        };
+                        console.log('✅ Confirmation email sent successfully to:', metadata.guest_email);
+                    } catch (emailError) {
+                        // No fallar el webhook por errores de email: la reserva ya está creada.
+                        console.error('❌ Failed to send confirmation email (reservation still valid):', emailError);
                     }
                 }
                 break;
+            }
 
             case 'rejected':
             case 'cancelled':
@@ -227,4 +232,4 @@ export async function GET() {
         security: webhookSecret ? 'Signature validation enabled' : 'Signature validation disabled (MP_WEBHOOK_SECRET not configured)',
         environment: process.env.NODE_ENV
     });
-} 
+}

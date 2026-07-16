@@ -176,7 +176,7 @@ function unescapeICalText(text: string): string {
 export function airbnbEventToReservation(event: ICalEvent, cabinId: string): LocalReservation {
     return {
         id: `airbnb-${event.id}`,
-        documentId: '', // Will be populated when saved to Strapi
+        documentId: '', // Will be populated when saved to the database
         cabinId: cabinId,
         checkIn: event.startDate,
         checkOut: event.endDate,

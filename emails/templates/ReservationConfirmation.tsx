@@ -1,7 +1,6 @@
 import { Text, Section, Button } from '@react-email/components'
 import EmailLayout from '../components/EmailLayout'
 import { formatDate, formatPrice, calculateNights } from '../utils/emailHelpers'
-import { calculatePriceWithWeekdayDiscount } from '@/utils/pricing'
 
 export interface ReservationConfirmationData {
   guestName: string
@@ -11,8 +10,8 @@ export interface ReservationConfirmationData {
   checkOut: Date
   totalPrice: number
   reservationCode: string
-  paymentId?: string // Opcional ahora, no lo mostramos
-  pricePerNight?: number // Para calcular descuentos aplicados
+  paymentId?: string // Opcional, no lo mostramos
+  pricePerNight?: number // Ya no se usa para recalcular; se conserva por compatibilidad
 }
 
 interface ReservationConfirmationProps {
@@ -20,12 +19,8 @@ interface ReservationConfirmationProps {
 }
 
 export default function ReservationConfirmation({ data }: ReservationConfirmationProps) {
+  // Se muestra el total recibido y la cantidad de noches, sin recalcular precios.
   const nights = calculateNights(data.checkIn, data.checkOut)
-  
-  // Calcular si hubo descuentos aplicados
-  const pricingBreakdown = data.pricePerNight 
-    ? calculatePriceWithWeekdayDiscount(data.pricePerNight, data.checkIn, data.checkOut)
-    : null
 
   return (
     <EmailLayout preview={`Confirmación de reserva ${data.reservationCode} - ${data.cabinName}`}>
@@ -67,25 +62,10 @@ export default function ReservationConfirmation({ data }: ReservationConfirmatio
             <Text className="text-sm font-bold text-brown-earth m-0">{nights} {nights === 1 ? 'noche' : 'noches'}</Text>
           </Section>
           
-          {pricingBreakdown?.hasDiscount && (
-            <Section className="flex justify-between py-2 text-green-600">
-              <Text className="text-sm font-medium m-0">Descuento días de semana (15%):</Text>
-              <Text className="text-sm font-bold m-0">-{formatPrice(pricingBreakdown.weekdayDiscount)}</Text>
-            </Section>
-          )}
-          
           <Section className="flex justify-between py-3 bg-soft-cream/50 px-4 rounded-lg">
             <Text className="text-base font-bold text-brown-earth m-0">Total abonado:</Text>
             <Text className="text-base font-bold text-brown-earth m-0">{formatPrice(data.totalPrice)}</Text>
           </Section>
-          
-          {pricingBreakdown?.hasDiscount && (
-            <Section className="text-center mt-2">
-              <Text className="text-sm text-green-600 m-0 font-medium">
-                ¡Ahorraste {formatPrice(pricingBreakdown.weekdayDiscount)} con nuestro descuento de días de semana!
-              </Text>
-            </Section>
-          )}
         </Section>
       </Section>
 

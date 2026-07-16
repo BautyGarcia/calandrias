@@ -1,4 +1,4 @@
-// Imagen mínima: sólo lo que la app consume (antes StrapiMedia)
+// Imagen mínima: sólo lo que la app consume
 export interface CabinImage {
   url: string;
   alternativeText?: string | null;

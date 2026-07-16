@@ -1,136 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { StrapiAPI, strapiToLocalReservation } from '@/lib/strapi'
-import { CreateReservationRequest } from '@/types'
+import { z } from 'zod'
+import {
+    checkDateAvailability,
+    createReservation,
+    generateReservationCode,
+} from '@/lib/db/reservations'
+import { getSiteSettings } from '@/lib/db/content'
+import type { ReservationInput } from '@/types/db'
 
-export async function GET(request: NextRequest) {
-    try {
-        const searchParams = request.nextUrl.searchParams
-        const cabinId = searchParams.get('cabinId')
-        const state = searchParams.get('state')
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-        const strapiAPI = new StrapiAPI()
-
-        // Obtener reservas de Strapi
-        const strapiReservations = await strapiAPI.getReservations(cabinId || undefined)
-
-        // Validar que strapiReservations es un array
-        if (!Array.isArray(strapiReservations)) {
-            return NextResponse.json({
-                reservations: [],
-                total: 0
-            })
-        }
-
-        // Convertir a formato local
-        let localReservations = strapiReservations.map(strapiToLocalReservation)
-
-        // Filtrar por status si se especifica
-        if (state) {
-            localReservations = localReservations.filter(r => r.state === state)
-        }
-
-        return NextResponse.json({
-            reservations: localReservations,
-            total: localReservations.length
-        })
-
-    } catch (error) {
-        return NextResponse.json(
-            {
-                error: 'Error obteniendo reservas',
-                message: error instanceof Error ? error.message : 'Error desconocido'
-            },
-            { status: 500 }
-        )
-    }
-}
+// Validación de la reserva pública (fechas YYYY-MM-DD, checkOut > checkIn).
+const CreateReservationSchema = z
+    .object({
+        cabinId: z.string().min(1, 'cabinId requerido'),
+        checkIn: z.string().regex(DATE_RE, 'checkIn debe tener formato YYYY-MM-DD'),
+        checkOut: z.string().regex(DATE_RE, 'checkOut debe tener formato YYYY-MM-DD'),
+        guestName: z.string().min(2, 'Nombre requerido'),
+        guestEmail: z.string().email('Email inválido'),
+        guestPhone: z.string().optional(),
+        guests: z.number().int().min(1, 'Mínimo 1 huésped'),
+        pets: z.number().int().min(0, 'pets no puede ser negativo').default(0),
+        state: z.enum(['confirmed', 'pending', 'cancelled', 'blocked']).optional(),
+        source: z.enum(['airbnb', 'direct', 'manual']).optional(),
+        externalId: z.string().optional(),
+        reservationCode: z.string().optional(),
+        totalPrice: z.number().optional(),
+        currency: z.string().optional(),
+        specialRequests: z.string().optional(),
+    })
+    .refine((data) => data.checkOut > data.checkIn, {
+        message: 'checkOut debe ser posterior a checkIn',
+        path: ['checkOut'],
+    })
 
 export async function POST(request: NextRequest) {
     try {
-        const body: CreateReservationRequest = await request.json()
+        const body = await request.json()
 
-        // Validar datos requeridos
-        if (!body.cabinId || !body.checkIn || !body.checkOut || !body.guestName) {
+        // 1. Validación de esquema
+        const parsed = CreateReservationSchema.safeParse(body)
+        if (!parsed.success) {
             return NextResponse.json(
-                { 
-                    success: false,
-                    error: 'Faltan campos requeridos: cabinId, checkIn, checkOut, guestName' 
-                },
+                { error: 'Datos de reserva inválidos', details: parsed.error.flatten() },
                 { status: 400 }
             )
         }
+        const data = parsed.data
 
-        const strapiAPI = new StrapiAPI()
-
-        // Verificar disponibilidad usando el nuevo endpoint centralizado
-        const availabilityCheck = await strapiAPI.checkDateAvailability(
-            body.cabinId,
-            body.checkIn,
-            body.checkOut
-        )
-
-        if (!availabilityCheck.isAvailable) {
+        // 2. Gating de reservas online
+        const settings = await getSiteSettings()
+        if (!settings.bookingsEnabled) {
             return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Fechas no disponibles',
-                    conflictingReservations: availabilityCheck.conflictingReservations.map(r => ({
-                        id: r.id,
-                        checkIn: r.checkIn,
-                        checkOut: r.checkOut,
-                        source: r.source,
-                        guestName: r.guestName
-                    }))
-                },
+                { error: 'Las reservas online están temporalmente deshabilitadas' },
+                { status: 403 }
+            )
+        }
+
+        // 3. Revalidar disponibilidad
+        const availability = await checkDateAvailability(data.cabinId, data.checkIn, data.checkOut)
+        if (!availability.isAvailable) {
+            return NextResponse.json(
+                { error: 'Las fechas seleccionadas ya no están disponibles' },
                 { status: 409 }
             )
         }
 
-        // Preparar datos de la reserva
-        const reservationData = {
-            cabinId: body.cabinId,
-            checkIn: body.checkIn,
-            checkOut: body.checkOut,
-            guestName: body.guestName,
-            guestEmail: body.guestEmail || '',
-            guestPhone: body.guestPhone,
-            guests: body.guests || 1,
-            pets: body.pets || 0,
-            state: body.state || 'confirmed',
-            source: body.source || 'direct',
-            externalId: body.externalId,
-            reservationCode: body.reservationCode || generateReservationCode(),
-            totalPrice: body.totalPrice,
-            currency: body.currency || 'ARS',
-            specialRequests: body.specialRequests
+        // 4. Crear reserva
+        const input: ReservationInput = {
+            cabinId: data.cabinId,
+            checkIn: data.checkIn,
+            checkOut: data.checkOut,
+            guestName: data.guestName,
+            guestEmail: data.guestEmail,
+            guestPhone: data.guestPhone,
+            guests: data.guests,
+            pets: data.pets,
+            state: data.state ?? 'confirmed',
+            source: data.source ?? 'direct',
+            externalId: data.externalId,
+            reservationCode: data.reservationCode ?? generateReservationCode(),
+            totalPrice: data.totalPrice,
+            currency: data.currency ?? 'ARS',
+            specialRequests: data.specialRequests,
         }
 
-        // Crear reserva en Strapi
-        const strapiReservation = await strapiAPI.createReservation(reservationData)
-
-        // Convertir a formato local para respuesta
-        const localReservation = strapiToLocalReservation(strapiReservation)
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                reservation: localReservation,
-                message: 'Reserva creada exitosamente'
-            }
-        }, { status: 201 })
+        const reservation = await createReservation(input)
+        return NextResponse.json({ reservation }, { status: 201 })
 
     } catch (error) {
+        // La constraint de solapamiento se traduce a Error('DATE_CONFLICT').
+        if (error instanceof Error && error.message === 'DATE_CONFLICT') {
+            return NextResponse.json(
+                { error: 'Las fechas seleccionadas ya no están disponibles' },
+                { status: 409 }
+            )
+        }
+
+        console.error('Error creando reserva:', error)
         return NextResponse.json(
             {
-                success: false,
                 error: 'Error creando reserva',
-                message: error instanceof Error ? error.message : 'Error desconocido'
+                message: error instanceof Error ? error.message : 'Error desconocido',
             },
             { status: 500 }
         )
     }
 }
-
-function generateReservationCode(): string {
-    return 'CAL-' + Math.random().toString(36).substr(2, 8).toUpperCase()
-} 

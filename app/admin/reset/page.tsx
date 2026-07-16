@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase/client'
+import { parseAuthHashType } from '@/lib/auth-utils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,8 +18,12 @@ export default function AdminResetPage() {
     const [loading, setLoading] = useState(false)
     // null = comprobando, true/false = hay o no una sesión de recuperación.
     const [hasSession, setHasSession] = useState<boolean | null>(null)
+    // El hash se consume al crear el cliente (detectSessionInUrl); leemos el
+    // type antes para saber si es una invitación o un reset.
+    const [isInvite, setIsInvite] = useState(false)
 
     useEffect(() => {
+        setIsInvite(parseAuthHashType(window.location.hash) === 'invite')
         // El cliente del navegador procesa el token de recuperación del hash
         // automáticamente (detectSessionInUrl). Verificamos que exista sesión.
         const supabase = createBrowserSupabase()
@@ -64,7 +69,7 @@ export default function AdminResetPage() {
                         Calandrias
                     </h1>
                     <p className="text-[var(--slate-gray)]">
-                        Restablecer contraseña
+                        {isInvite ? 'Creá tu contraseña para acceder al panel' : 'Restablecer contraseña'}
                     </p>
                 </div>
 
@@ -72,7 +77,7 @@ export default function AdminResetPage() {
                     <CardHeader className="border-b border-[var(--beige-arena)]">
                         <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                             <Lock className="h-5 w-5" />
-                            Nueva contraseña
+                            {isInvite ? 'Bienvenido/a — creá tu contraseña' : 'Nueva contraseña'}
                         </CardTitle>
                     </CardHeader>
 
@@ -84,17 +89,19 @@ export default function AdminResetPage() {
                         ) : hasSession === false ? (
                             <Alert className="border-amber-200 bg-amber-50">
                                 <AlertDescription className="text-amber-800">
-                                    El enlace de recuperación no es válido o ya expiró. Volvé a{' '}
-                                    <a href="/admin/login" className="underline underline-offset-4">
-                                        iniciar sesión
-                                    </a>{' '}
-                                    y solicitá uno nuevo.
+                                    {isInvite
+                                        ? 'El enlace de invitación no es válido o ya expiró. Pedile al administrador que te envíe una nueva invitación, o usá "¿Olvidaste tu contraseña?" en la pantalla de ingreso.'
+                                        : <>El enlace de recuperación no es válido o ya expiró. Volvé a{' '}
+                                            <a href="/admin/login" className="underline underline-offset-4">
+                                                iniciar sesión
+                                            </a>{' '}
+                                            y solicitá uno nuevo.</>}
                                 </AlertDescription>
                             </Alert>
                         ) : done ? (
                             <Alert className="border-green-200 bg-green-50">
                                 <AlertDescription className="text-green-700">
-                                    Tu contraseña fue actualizada. Ya podés{' '}
+                                    {isInvite ? 'Tu contraseña fue creada.' : 'Tu contraseña fue actualizada.'} Ya podés{' '}
                                     <a href="/admin/login" className="underline underline-offset-4">
                                         ingresar al panel
                                     </a>.

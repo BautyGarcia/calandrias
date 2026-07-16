@@ -152,6 +152,44 @@ export async function getCabinBySlug(slug: string): Promise<Cabin | null> {
     return data ? rowToCabin(data as CabinRow) : null
 }
 
+// (admin) Lista TODAS las cabañas, incluidas las no publicadas (para el panel).
+export async function getAllCabinsAdmin(): Promise<Cabin[]> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+        .from('cabins')
+        .select('*')
+        .order('sort_order', { ascending: true })
+
+    if (error) throw new Error(`Error obteniendo cabañas (admin): ${error.message}`)
+    return (data as CabinRow[]).map(rowToCabin)
+}
+
+// (admin) Cabaña por slug sin filtrar is_published (para editar aunque esté oculta).
+export async function getCabinForAdmin(slug: string): Promise<Cabin | null> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+        .from('cabins')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle()
+
+    if (error) throw new Error(`Error obteniendo cabaña (admin): ${error.message}`)
+    return data ? rowToCabin(data as CabinRow) : null
+}
+
+// (admin) URL iCal de Airbnb de una cabaña (o '' si no está configurada). id = uuid.
+export async function getAirbnbIcalUrl(cabinId: string): Promise<string> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+        .from('cabin_sync_config')
+        .select('airbnb_ical_url')
+        .eq('cabin_id', cabinId)
+        .maybeSingle()
+
+    if (error) throw new Error(`Error obteniendo URL iCal: ${error.message}`)
+    return data?.airbnb_ical_url ?? ''
+}
+
 // (admin) Actualiza campos editables de una cabaña por uuid.
 export async function updateCabin(id: string, patch: Partial<CabinInput>): Promise<void> {
     const supabase = createAdminClient()

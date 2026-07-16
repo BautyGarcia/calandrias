@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { StrapiAPI } from '@/lib/strapi'
+import { getCabins, getCabinBySlug } from '@/lib/db/cabins'
+import { imageUrl } from '@/utils/image'
 import CabinCalendarSection from '@/components/CabinCalendarSection'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,17 +27,9 @@ interface PageProps {
     }>
 }
 
-// Helper para construir URL de imagen de Strapi
-function getStrapiImageUrl(url: string): string {
-    if (url.startsWith('http')) return url
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
-    return `${strapiUrl}${url}`
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params
-    const strapiApi = new StrapiAPI()
-    const cabin = await strapiApi.getCabinBySlug(slug)
+    const cabin = await getCabinBySlug(slug)
 
     if (!cabin) {
         return {
@@ -47,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const title = `${cabin.subtitle} - ${cabin.name} | Cabaña en Tandil - Las Calandrias`
     const description = `${cabin.description} ${cabin.capacity}, ${cabin.bedrooms}, ${cabin.bathrooms}. Reservá tu estadía en Las Calandrias, Tandil.`
-    const thumbnailUrl = getStrapiImageUrl(cabin.thumbnail.url)
+    const thumbnailUrl = imageUrl(cabin.thumbnail.url)
 
     return {
         title,
@@ -90,9 +83,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export async function generateStaticParams() {
-    const strapiApi = new StrapiAPI()
-    const cabins = await strapiApi.getCabins()
-    
+    const cabins = await getCabins()
+
     return cabins.map((cabin) => ({
         slug: cabin.slug,
     }))
@@ -103,14 +95,13 @@ export const revalidate = 3600
 
 export default async function CabinPage({ params }: PageProps) {
     const { slug } = await params
-    const strapiApi = new StrapiAPI()
-    const cabin = await strapiApi.getCabinBySlug(slug)
+    const cabin = await getCabinBySlug(slug)
 
     if (!cabin) {
         notFound()
     }
 
-    const thumbnailUrl = getStrapiImageUrl(cabin.thumbnail.url)
+    const thumbnailUrl = imageUrl(cabin.thumbnail.url)
 
     return (
         <>

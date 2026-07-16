@@ -1,6 +1,7 @@
 import Script from 'next/script'
 import { Cabin } from '@/types/cabin'
 import { getMinimumPrice, formatPrice } from '@/utils/pricing'
+import { imageUrl as resolveImageUrl } from '@/utils/image'
 
 interface LocalBusinessSchemaProps {
     name?: string
@@ -11,13 +12,6 @@ interface LocalBusinessSchemaProps {
 
 interface HotelSchemaProps {
     cabin: Cabin
-}
-
-// Helper para construir URL de imagen de Strapi
-function getStrapiImageUrl(url: string): string {
-    if (url.startsWith('http')) return url
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
-    return `${strapiUrl}${url}`
 }
 
 export function LocalBusinessSchema({
@@ -135,7 +129,7 @@ export function LocalBusinessSchema({
 export function HotelSchema({ cabin }: HotelSchemaProps) {
     const minPrice = getMinimumPrice(cabin)
     const formattedPrice = formatPrice(minPrice)
-    const imageUrl = getStrapiImageUrl(cabin.image.url)
+    const imageUrl = resolveImageUrl(cabin.image.url)
     
     const schema = {
         "@context": "https://schema.org",

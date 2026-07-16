@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'bls-strapi-s3-bucket.s3.us-east-1.amazonaws.com',
+        hostname: '**.supabase.co',
       },
     ],
   },

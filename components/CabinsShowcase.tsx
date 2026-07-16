@@ -12,16 +12,10 @@ import {
 } from "lucide-react"
 import { Cabin } from "@/types/cabin"
 import { getMinimumPrice } from "@/utils/pricing"
+import { imageUrl } from "@/utils/image"
 
 interface CabinsShowcaseProps {
     cabins: Cabin[]
-}
-
-// Helper para construir URL de imagen de Strapi
-function getStrapiImageUrl(url: string): string {
-    if (url.startsWith('http')) return url
-    const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
-    return `${strapiUrl}${url}`
 }
 
 export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
@@ -45,17 +39,17 @@ export function CabinsShowcase({ cabins }: CabinsShowcaseProps) {
                     console.log(minPrice)
                     return (
                         <Link
-                            key={cabin.id}
+                            key={cabin.slug}
                             href={`/cabanas/${cabin.slug}`}
                             className="block group"
                         >
                             <Card
                                 className={`pt-0 relative overflow-hidden bg-white border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cabin-card-${index + 1} flex flex-col h-full cursor-pointer`}
                             >
-                                {/* Imagen real de la cabaña desde Strapi */}
+                                {/* Imagen real de la cabaña */}
                                 <div className="relative h-80 overflow-hidden">
                                     <Image
-                                        src={getStrapiImageUrl(cabin.image.url)}
+                                        src={imageUrl(cabin.image.url)}
                                         alt={cabin.image.alternativeText || cabin.name}
                                         fill
                                         className="object-cover transition-transform duration-500 group-hover:scale-105"

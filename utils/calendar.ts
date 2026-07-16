@@ -1,5 +1,5 @@
 import { CalendarDay, CalendarEvent, CalendarMonth, CabinInfo, ReservationDetails } from '@/types/calendar'
-import { LocalReservation } from '@/types/reservation'
+import { AvailabilityRange } from '@/types/db'
 
 // Obtener los días de un mes para el calendario
 export function getCalendarMonth(year: number, month: number): CalendarMonth {
@@ -217,34 +217,28 @@ function createDateFromString(dateString: string | Date): Date {
   return new Date(dateString)
 }
 
-// Convertir reservas de Strapi a eventos de calendario
-export function convertStrapiReservationsToCalendarEvents(
-  reservations: LocalReservation[]
+// Convertir rangos de disponibilidad públicos a eventos de calendario.
+// No expone datos personales: el título siempre es "Ocupado".
+export function availabilityToCalendarEvents(
+  ranges: AvailabilityRange[],
+  cabinId: string
 ): CalendarEvent[] {
-  return reservations
-    .filter(reservation => reservation.state !== 'cancelled') // Excluir canceladas
-    .map(reservation => {
-      // Crear fechas sin problemas de zona horaria
-      const startDate = createDateFromString(reservation.checkIn)
-      const endDate = createDateFromString(reservation.checkOut)
+  return ranges.map((range, index) => {
+    // Parsear como fecha local para evitar el corrimiento de día en UTC-3.
+    const startDate = createDateFromString(range.checkIn)
+    const endDate = createDateFromString(range.checkOut)
 
-      return {
-        id: `strapi-${reservation.id}`,
-        title: `${reservation.guestName} - ${reservation.source === 'direct' ? 'Reserva Directa' : reservation.source}`,
-        start: startDate,
-        end: endDate,
-        cabinId: reservation.cabinId,
-        type: 'reservation' as const,
-        details: {
-          guestName: reservation.guestName,
-          reservationCode: reservation.reservationCode || `REF-${reservation.id}`,
-          source: reservation.source,
-          checkIn: reservation.checkIn,
-          checkOut: reservation.checkOut,
-          guests: reservation.guests,
-          pets: reservation.pets,
-          specialRequests: reservation.specialRequests
-        }
-      }
-    })
+    // Los rangos bloqueados mantienen el color "blocked"; confirmadas y
+    // pendientes se muestran como reservadas (mismos colores que antes).
+    const type = range.state === 'blocked' ? 'blocked' : 'reservation'
+
+    return {
+      id: `occupied-${index}-${range.checkIn}-${range.checkOut}`,
+      title: 'Ocupado',
+      start: startDate,
+      end: endDate,
+      cabinId,
+      type,
+    }
+  })
 } 

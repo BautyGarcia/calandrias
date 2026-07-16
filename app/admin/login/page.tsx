@@ -1,49 +1,75 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { createBrowserSupabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Lock, User, Loader2 } from "lucide-react"
+import { Lock, Mail, Loader2 } from "lucide-react"
 
 function AdminLoginForm() {
-    const [username, setUsername] = useState('')
+    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [info, setInfo] = useState('')
     const [loading, setLoading] = useState(false)
-    const router = useRouter()
+    const [resetting, setResetting] = useState(false)
     const searchParams = useSearchParams()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError('')
+        setInfo('')
 
         try {
-            const response = await fetch('/api/admin/auth', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password })
+            const supabase = createBrowserSupabase()
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password,
             })
 
-            const data = await response.json()
-
-            if (response.ok && data.success) {
-                // Redirigir a la página solicitada o al panel de reservas
-                const redirectTo = searchParams.get('redirect') || '/admin/reservas'
-                router.push(redirectTo)
-            } else {
-                setError(data.error || 'Error de autenticación')
+            if (signInError) {
+                // Mensaje genérico: nunca revelar si el email existe.
+                setError('Credenciales incorrectas')
+                return
             }
+
+            // Las cookies ya fueron seteadas por el cliente de @supabase/ssr.
+            // Navegación completa para que el middleware vea las cookies frescas.
+            const redirectTo = searchParams.get('redirect') || '/admin/reservas'
+            window.location.assign(redirectTo)
         } catch {
-            setError('Error de conexión. Intenta nuevamente.')
+            setError('Error de conexión. Intentá nuevamente.')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleForgotPassword = async () => {
+        setError('')
+        setInfo('')
+
+        if (!email.trim()) {
+            setError('Ingresá tu email para recuperar la contraseña.')
+            return
+        }
+
+        setResetting(true)
+        try {
+            const supabase = createBrowserSupabase()
+            await supabase.auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: `${process.env.NEXT_PUBLIC_ADMIN_URL}/reset`,
+            })
+            // Mensaje genérico: no revelar si el email está registrado.
+            setInfo('Si el email está registrado, te enviamos un enlace para restablecer la contraseña.')
+        } catch {
+            setError('No se pudo enviar el email. Intentá nuevamente.')
+        } finally {
+            setResetting(false)
         }
     }
 
@@ -63,27 +89,28 @@ function AdminLoginForm() {
                     <CardHeader className="border-b border-[var(--beige-arena)]">
                         <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                             <Lock className="h-5 w-5" />
-                            Acceso Administrador
+                            Ingresar al panel
                         </CardTitle>
                     </CardHeader>
-                    
+
                     <CardContent className="p-6">
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="username" className="text-[var(--brown-earth)]">
-                                    Usuario
+                                <Label htmlFor="email" className="text-[var(--brown-earth)]">
+                                    Email
                                 </Label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-[var(--slate-gray)]" />
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-[var(--slate-gray)]" />
                                     <Input
-                                        id="username"
-                                        type="text"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        placeholder="Ingresa tu usuario"
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="tu@email.com"
                                         className="pl-10 border-[var(--beige-arena)] focus:border-[var(--brown-earth)]"
                                         required
                                         disabled={loading}
+                                        autoComplete="email"
                                     />
                                 </div>
                             </div>
@@ -99,10 +126,11 @@ function AdminLoginForm() {
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Ingresa tu contraseña"
+                                        placeholder="Ingresá tu contraseña"
                                         className="pl-10 border-[var(--beige-arena)] focus:border-[var(--brown-earth)]"
                                         required
                                         disabled={loading}
+                                        autoComplete="current-password"
                                     />
                                 </div>
                             </div>
@@ -111,6 +139,14 @@ function AdminLoginForm() {
                                 <Alert className="border-red-200 bg-red-50">
                                     <AlertDescription className="text-red-700">
                                         {error}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {info && (
+                                <Alert className="border-green-200 bg-green-50">
+                                    <AlertDescription className="text-green-700">
+                                        {info}
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -126,9 +162,18 @@ function AdminLoginForm() {
                                         Ingresando...
                                     </>
                                 ) : (
-                                    'Ingresar'
+                                    'Ingresar al panel'
                                 )}
                             </Button>
+
+                            <button
+                                type="button"
+                                onClick={handleForgotPassword}
+                                disabled={resetting || loading}
+                                className="w-full text-sm text-[var(--slate-gray)] hover:text-[var(--brown-earth)] underline underline-offset-4 disabled:opacity-60"
+                            >
+                                {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+                            </button>
                         </form>
                     </CardContent>
                 </Card>
@@ -157,4 +202,4 @@ export default function AdminLogin() {
             <AdminLoginForm />
         </Suspense>
     )
-} 
+}

@@ -47,3 +47,6 @@ next-env.d.ts
 .env.local
 .env*.local
 !.env.example
+
+# Supabase CLI local state
+supabase/.temp/

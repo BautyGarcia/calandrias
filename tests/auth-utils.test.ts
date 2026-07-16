@@ -47,4 +47,20 @@ describe('sanitizeRedirect', () => {
     it('rejects a triple-slash path (///evil.com)', () => {
         expect(sanitizeRedirect('///evil.com', fallback)).toBe(fallback)
     })
+
+    it('rejects a path with an embedded tab (WHATWG URL parser strips it, exposing //evil.com)', () => {
+        expect(sanitizeRedirect('/\t/evil.com', fallback)).toBe(fallback)
+    })
+
+    it('rejects a path with an embedded newline', () => {
+        expect(sanitizeRedirect('/\n/evil.com', fallback)).toBe(fallback)
+    })
+
+    it('rejects a path with an embedded carriage return', () => {
+        expect(sanitizeRedirect('/\r/evil.com', fallback)).toBe(fallback)
+    })
+
+    it('rejects a path with a NUL byte', () => {
+        expect(sanitizeRedirect('/admin\x00', fallback)).toBe(fallback)
+    })
 })

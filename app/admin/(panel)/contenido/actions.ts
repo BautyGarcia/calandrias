@@ -251,3 +251,13 @@ export async function uploadGalleryImageAction(form: FormData): Promise<UploadRe
 
     return uploadImageToBucket(file, 'gallery')
 }
+
+// Sube la foto de un huésped (avatar de reseña) al bucket `images` bajo `avatars/`.
+export async function uploadReviewAvatarAction(form: FormData): Promise<UploadResult> {
+    await requireAdmin()
+
+    const file = form.get('file')
+    if (!(file instanceof File)) return { ok: false, error: 'No se recibió ningún archivo' }
+
+    return uploadImageToBucket(file, 'avatars')
+}

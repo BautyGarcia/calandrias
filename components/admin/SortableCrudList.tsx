@@ -157,13 +157,26 @@ function ImageDraftField({
                     )}
                 </div>
                 <div className="flex-1 space-y-2">
-                    <label className="inline-block">
-                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
-                        <span className={cn('inline-flex cursor-pointer items-center gap-2 rounded-md border border-[var(--beige-arena)] px-3 py-1.5 text-sm font-medium text-[var(--brown-earth)] hover:bg-[var(--light-sand)]', isPending && 'pointer-events-none opacity-60')}>
-                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                            Subir imagen
-                        </span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <label className="inline-block">
+                            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+                            <span className={cn('inline-flex cursor-pointer items-center gap-2 rounded-md border border-[var(--beige-arena)] px-3 py-1.5 text-sm font-medium text-[var(--brown-earth)] hover:bg-[var(--light-sand)]', isPending && 'pointer-events-none opacity-60')}>
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                {value ? 'Cambiar imagen' : 'Subir imagen'}
+                            </span>
+                        </label>
+                        {value && (
+                            <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => onChange('')}
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-[var(--slate-gray)] hover:text-[var(--terracotta)] disabled:opacity-60"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Quitar
+                            </button>
+                        )}
+                    </div>
                     <p className="text-xs text-[var(--slate-gray)]">JPG, PNG o WEBP. Hasta 5 MB.</p>
                 </div>
             </div>

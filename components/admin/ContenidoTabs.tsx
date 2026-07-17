@@ -13,6 +13,7 @@ import {
     upsertGalleryItemAction,
     deleteGalleryItemAction,
     uploadGalleryImageAction,
+    uploadReviewAvatarAction,
     reorderFaqsAction,
     reorderReviewsAction,
     reorderGalleryAction,
@@ -45,7 +46,7 @@ const REVIEW_FIELDS: CrudField[] = [
     { name: 'location', label: 'Ubicación', control: 'text', placeholder: 'Buenos Aires' },
     { name: 'text', label: 'Reseña', control: 'textarea' },
     { name: 'rating', label: 'Puntaje (1 a 5)', control: 'number', min: 1, max: 5 },
-    { name: 'avatarUrl', label: 'Foto (URL, opcional)', control: 'text', optional: true, help: 'Link a la foto del huésped. Opcional.' },
+    { name: 'avatarUrl', label: 'Foto del huésped (opcional)', control: 'image', optional: true },
 ]
 
 const GALLERY_FIELDS: CrudField[] = [
@@ -138,6 +139,7 @@ export function ContenidoTabs({
                     upsertAction={upsertReviewAction}
                     deleteAction={deleteReviewAction}
                     reorderAction={reorderReviewsAction}
+                    uploadAction={uploadReviewAvatarAction}
                 />
             )}
 

@@ -40,7 +40,6 @@ interface ReviewRow {
     name: string
     location: string
     text: string
-    avatar_url: string | null
     rating: number
     sort_order: number
     is_published: boolean
@@ -86,7 +85,6 @@ function rowToReview(row: ReviewRow): Review {
         name: row.name,
         location: row.location,
         text: row.text,
-        avatarUrl: row.avatar_url ?? undefined,
         rating: row.rating,
         sortOrder: row.sort_order,
         isPublished: row.is_published,
@@ -202,7 +200,6 @@ export async function upsertReview(review: ReviewInput): Promise<Review> {
         name: review.name,
         location: review.location,
         text: review.text,
-        avatar_url: review.avatarUrl ?? null,
         rating: review.rating,
         sort_order: review.sortOrder,
         is_published: review.isPublished,

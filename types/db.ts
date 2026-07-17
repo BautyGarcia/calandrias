@@ -125,7 +125,6 @@ export interface Review {
     name: string
     location: string
     text: string
-    avatarUrl?: string | null
     rating: number
     sortOrder: number
     isPublished: boolean

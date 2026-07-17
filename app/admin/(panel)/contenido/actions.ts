@@ -73,7 +73,6 @@ const reviewInputSchema = z.object({
     location: z.string().trim().min(1, 'Escribí la ubicación'),
     text: z.string().trim().min(1, 'Escribí la reseña'),
     rating: z.coerce.number().int().min(1).max(5),
-    avatarUrl: z.string().trim().optional().default(''),
     sortOrder: z.coerce.number().int(),
     isPublished: z.boolean(),
 })
@@ -172,14 +171,8 @@ export async function upsertReviewAction(input: unknown): Promise<ActionResult> 
         return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
     }
 
-    const { avatarUrl, ...rest } = parsed.data
-    const review: ReviewInput = {
-        ...rest,
-        avatarUrl: avatarUrl && avatarUrl.length > 0 ? avatarUrl : null,
-    }
-
     try {
-        await upsertReview(review)
+        await upsertReview(parsed.data as ReviewInput)
     } catch {
         return { ok: false, error: GENERIC_ERROR }
     }
@@ -252,12 +245,3 @@ export async function uploadGalleryImageAction(form: FormData): Promise<UploadRe
     return uploadImageToBucket(file, 'gallery')
 }
 
-// Sube la foto de un huésped (avatar de reseña) al bucket `images` bajo `avatars/`.
-export async function uploadReviewAvatarAction(form: FormData): Promise<UploadResult> {
-    await requireAdmin()
-
-    const file = form.get('file')
-    if (!(file instanceof File)) return { ok: false, error: 'No se recibió ningún archivo' }
-
-    return uploadImageToBucket(file, 'avatars')
-}

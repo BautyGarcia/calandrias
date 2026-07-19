@@ -19,8 +19,10 @@ export async function middleware(request: NextRequest) {
 
     // En el host admin, admin.<dominio>/foo mapea a /admin/foo (transparente).
     // Un request directo a /admin/... (en cualquier host) ya es el path efectivo,
-    // por lo que nunca generamos /admin/admin/...
-    const needsRewrite = isAdminHost && !pathname.startsWith('/admin')
+    // por lo que nunca generamos /admin/admin/... Las rutas /api/* tampoco se
+    // reescriben: viven en su path real en ambos hosts (p. ej. /api/admin/logout,
+    // que se protege sola con requireAdmin).
+    const needsRewrite = isAdminHost && !pathname.startsWith('/admin') && !pathname.startsWith('/api')
     const effectivePath = needsRewrite
         ? `/admin${pathname === '/' ? '' : pathname}`
         : pathname

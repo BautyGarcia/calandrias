@@ -12,7 +12,12 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabase()
     await supabase.auth.signOut()
 
-    // Navegación completa a login (302) para que el middleware vea las cookies
-    // ya borradas por signOut.
-    return NextResponse.redirect(new URL('/admin/login', request.url), { status: 303 })
+    // Navegación completa a login (303) para que el middleware vea las cookies
+    // ya borradas por signOut. En el host admin la URL canónica del login es
+    // /login (el middleware la reescribe a /admin/login).
+    const isAdminHost = (request.headers.get('host') ?? '').startsWith('admin.')
+    return NextResponse.redirect(
+        new URL(isAdminHost ? '/login' : '/admin/login', request.url),
+        { status: 303 }
+    )
 }

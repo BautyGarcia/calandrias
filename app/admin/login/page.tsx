@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase/client'
-import { sanitizeRedirect } from '@/lib/auth-utils'
+import { parseAuthHashTokens, sanitizeRedirect } from '@/lib/auth-utils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,18 @@ function AdminLoginForm() {
     const [loading, setLoading] = useState(false)
     const [resetting, setResetting] = useState(false)
     const searchParams = useSearchParams()
+
+    // Red de seguridad: si un link de email de Supabase (recovery/invite)
+    // aterriza acá con los tokens en el hash — pasa cuando el mail se dispara
+    // desde el dashboard sin redirect_to y cae al Site URL raíz, cuyo redirect
+    // a login preserva el fragment — lo reenviamos a la pantalla de reset con
+    // el hash intacto para que pueda definir su contraseña.
+    useEffect(() => {
+        const hash = window.location.hash
+        if (!parseAuthHashTokens(hash)) return
+        const resetPath = window.location.pathname.startsWith('/admin') ? '/admin/reset' : '/reset'
+        window.location.replace(resetPath + hash)
+    }, [])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()

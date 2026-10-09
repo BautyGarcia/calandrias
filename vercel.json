@@ -1,9 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["iad1"],
   "crons": [
     {
       "path": "/api/cron/sync-airbnb",
       "schedule": "0 6 * * *"
     }
   ]
-} 
+}

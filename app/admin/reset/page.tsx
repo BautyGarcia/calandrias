@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createBrowserSupabase } from '@/lib/supabase/client'
-import { parseAuthHashTokens, parseAuthHashType } from '@/lib/auth-utils'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,39 +10,21 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Lock, Loader2 } from "lucide-react"
 
-export default function AdminResetPage() {
+// Pantalla de nueva contraseña. better-auth verifica el token del mail en
+// /api/auth/reset-password/:token y redirige acá con `?token=...` (o con
+// `?error=INVALID_TOKEN` si venció o no es válido).
+function AdminResetForm() {
+    const searchParams = useSearchParams()
+    const token = searchParams.get('token')
     const [password, setPassword] = useState('')
     const [confirm, setConfirm] = useState('')
     const [error, setError] = useState('')
     const [done, setDone] = useState(false)
     const [loading, setLoading] = useState(false)
-    // null = comprobando, true/false = hay o no una sesión de recuperación.
-    const [hasSession, setHasSession] = useState<boolean | null>(null)
-    // El hash se consume al crear el cliente (detectSessionInUrl); leemos el
-    // type antes para saber si es una invitación o un reset.
-    const [isInvite, setIsInvite] = useState(false)
 
-    useEffect(() => {
-        const hash = window.location.hash
-        setIsInvite(parseAuthHashType(hash) === 'invite')
-        // El cliente browser usa flowType pkce y auth-js rechaza los hashes
-        // implicit de los links de email, así que detectSessionInUrl no crea
-        // la sesión: parseamos los tokens y la seteamos explícitamente.
-        const tokens = parseAuthHashTokens(hash)
-        const supabase = createBrowserSupabase()
-        const session = tokens
-            ? supabase.auth.setSession(tokens).then(({ data, error }) => {
-                if (!error && data.session) {
-                    // Sacamos los tokens de la URL para que no queden en el
-                    // historial ni se reintente un setSession con tokens usados.
-                    window.history.replaceState(null, '', window.location.pathname + window.location.search)
-                    return true
-                }
-                return false
-            })
-            : supabase.auth.getSession().then(({ data }) => !!data.session)
-        session.then(setHasSession)
-    }, [])
+    const loginPath = typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin')
+        ? '/login'
+        : '/admin/login'
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -56,12 +38,12 @@ export default function AdminResetPage() {
             setError('Las contraseñas no coinciden.')
             return
         }
+        if (!token) return
 
         setLoading(true)
         try {
-            const supabase = createBrowserSupabase()
-            const { error: updateError } = await supabase.auth.updateUser({ password })
-            if (updateError) {
+            const { error: resetError } = await authClient.resetPassword({ newPassword: password, token })
+            if (resetError) {
                 setError('No se pudo actualizar la contraseña. El enlace pudo haber expirado.')
                 return
             }
@@ -80,41 +62,33 @@ export default function AdminResetPage() {
                     <h1 className="text-3xl font-serif text-[var(--brown-earth)] font-bold mb-2">
                         Calandrias
                     </h1>
-                    <p className="text-[var(--slate-gray)]">
-                        {isInvite ? 'Creá tu contraseña para acceder al panel' : 'Restablecer contraseña'}
-                    </p>
+                    <p className="text-[var(--slate-gray)]">Restablecer contraseña</p>
                 </div>
 
                 <Card className="border-[var(--beige-arena)] shadow-lg">
                     <CardHeader className="border-b border-[var(--beige-arena)]">
                         <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                             <Lock className="h-5 w-5" />
-                            {isInvite ? 'Bienvenido/a — creá tu contraseña' : 'Nueva contraseña'}
+                            Nueva contraseña
                         </CardTitle>
                     </CardHeader>
 
                     <CardContent className="p-6">
-                        {hasSession === null ? (
-                            <div className="flex justify-center py-6">
-                                <Loader2 className="h-6 w-6 animate-spin text-[var(--brown-earth)]" />
-                            </div>
-                        ) : hasSession === false ? (
+                        {!token ? (
                             <Alert className="border-amber-200 bg-amber-50">
                                 <AlertDescription className="text-amber-800">
-                                    {isInvite
-                                        ? 'El enlace de invitación no es válido o ya expiró. Pedile al administrador que te envíe una nueva invitación, o usá "¿Olvidaste tu contraseña?" en la pantalla de ingreso.'
-                                        : <>El enlace de recuperación no es válido o ya expiró. Volvé a{' '}
-                                            <a href="/admin/login" className="underline underline-offset-4">
-                                                iniciar sesión
-                                            </a>{' '}
-                                            y solicitá uno nuevo.</>}
+                                    El enlace de recuperación no es válido o ya expiró. Volvé a{' '}
+                                    <a href={loginPath} className="underline underline-offset-4">
+                                        iniciar sesión
+                                    </a>{' '}
+                                    y solicitá uno nuevo.
                                 </AlertDescription>
                             </Alert>
                         ) : done ? (
                             <Alert className="border-green-200 bg-green-50">
                                 <AlertDescription className="text-green-700">
-                                    {isInvite ? 'Tu contraseña fue creada.' : 'Tu contraseña fue actualizada.'} Ya podés{' '}
-                                    <a href="/admin/login" className="underline underline-offset-4">
+                                    Tu contraseña fue actualizada. Ya podés{' '}
+                                    <a href={loginPath} className="underline underline-offset-4">
                                         ingresar al panel
                                     </a>.
                                 </AlertDescription>
@@ -189,5 +163,21 @@ export default function AdminResetPage() {
                 </Card>
             </div>
         </div>
+    )
+}
+
+function ResetLoading() {
+    return (
+        <div className="min-h-screen bg-[var(--soft-cream)] flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--brown-earth)]" />
+        </div>
+    )
+}
+
+export default function AdminResetPage() {
+    return (
+        <Suspense fallback={<ResetLoading />}>
+            <AdminResetForm />
+        </Suspense>
     )
 }

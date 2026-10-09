@@ -1,5 +1,8 @@
 import 'server-only'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { and, asc, eq, gt, inArray, lt } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { reservations } from '@/lib/schema'
+import { errorMessage, pgErrorCode } from '@/lib/db/errors'
 import type {
     Reservation,
     ReservationInput,
@@ -137,37 +140,48 @@ function rowToAvailabilityRange(row: Pick<ReservationRow, 'check_in' | 'check_ou
 }
 
 // ---------------------------------------------------------------
-// Acceso a datos
+// Acceso a datos (todo en el server; sin RLS)
 // ---------------------------------------------------------------
+
+const availabilityColumns = {
+    check_in: reservations.check_in,
+    check_out: reservations.check_out,
+    state: reservations.state,
+}
 
 // (admin) Todas las reservas, opcionalmente filtradas por cabaña y/o estado.
 export async function getReservations(filters?: {
     cabinSlug?: string
     state?: string
 }): Promise<Reservation[]> {
-    const supabase = createAdminClient()
-    let query = supabase.from('reservations').select('*').order('check_in', { ascending: true })
+    const conditions = []
+    if (filters?.cabinSlug) conditions.push(eq(reservations.cabin_slug, filters.cabinSlug))
+    if (filters?.state) conditions.push(eq(reservations.state, filters.state as ReservationState))
 
-    if (filters?.cabinSlug) query = query.eq('cabin_slug', filters.cabinSlug)
-    if (filters?.state) query = query.eq('state', filters.state)
-
-    const { data, error } = await query
-    if (error) throw new Error(`Error obteniendo reservas: ${error.message}`)
-    return (data as ReservationRow[]).map(rowToReservation)
+    try {
+        const rows = await db
+            .select()
+            .from(reservations)
+            .where(conditions.length ? and(...conditions) : undefined)
+            .orderBy(asc(reservations.check_in))
+        return rows.map(rowToReservation)
+    } catch (e) {
+        throw new Error(`Error obteniendo reservas: ${errorMessage(e)}`)
+    }
 }
 
 // Rangos ocupados públicos (confirmadas, bloqueadas y pendientes). Sin datos personales.
 export async function getPublicAvailability(cabinSlug: string): Promise<AvailabilityRange[]> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('reservations')
-        .select('check_in, check_out, state')
-        .eq('cabin_slug', cabinSlug)
-        .in('state', OVERLAP_STATES)
-        .order('check_in', { ascending: true })
-
-    if (error) throw new Error(`Error obteniendo disponibilidad: ${error.message}`)
-    return (data as Pick<ReservationRow, 'check_in' | 'check_out' | 'state'>[]).map(rowToAvailabilityRange)
+    try {
+        const rows = await db
+            .select(availabilityColumns)
+            .from(reservations)
+            .where(and(eq(reservations.cabin_slug, cabinSlug), inArray(reservations.state, OVERLAP_STATES)))
+            .orderBy(asc(reservations.check_in))
+        return rows.map(rowToAvailabilityRange)
+    } catch (e) {
+        throw new Error(`Error obteniendo disponibilidad: ${errorMessage(e)}`)
+    }
 }
 
 // Chequeo de solapamiento: check_in < :checkOut AND check_out > :checkIn
@@ -178,33 +192,34 @@ export async function checkDateAvailability(
     checkIn: string,
     checkOut: string,
 ): Promise<{ isAvailable: boolean; conflictingReservations: AvailabilityRange[] }> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('reservations')
-        .select('check_in, check_out, state')
-        .eq('cabin_slug', cabinSlug)
-        .in('state', OVERLAP_STATES)
-        .lt('check_in', checkOut)
-        .gt('check_out', checkIn)
-
-    if (error) throw new Error(`Error verificando disponibilidad: ${error.message}`)
-    const conflicts = (data as Pick<ReservationRow, 'check_in' | 'check_out' | 'state'>[]).map(rowToAvailabilityRange)
-    return { isAvailable: conflicts.length === 0, conflictingReservations: conflicts }
+    try {
+        const rows = await db
+            .select(availabilityColumns)
+            .from(reservations)
+            .where(
+                and(
+                    eq(reservations.cabin_slug, cabinSlug),
+                    inArray(reservations.state, OVERLAP_STATES),
+                    lt(reservations.check_in, checkOut),
+                    gt(reservations.check_out, checkIn),
+                ),
+            )
+        const conflicts = rows.map(rowToAvailabilityRange)
+        return { isAvailable: conflicts.length === 0, conflictingReservations: conflicts }
+    } catch (e) {
+        throw new Error(`Error verificando disponibilidad: ${errorMessage(e)}`)
+    }
 }
 
 // Busca una reserva por el id de pago de MercadoPago. Sirve de guard de
 // idempotencia en el webhook: MP entrega múltiples notificaciones por pago.
 export async function getReservationByMpPaymentId(mpPaymentId: string): Promise<Reservation | null> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('reservations')
-        .select('*')
-        .eq('mp_payment_id', mpPaymentId)
-        .limit(1)
-
-    if (error) throw new Error(`Error obteniendo reserva por pago: ${error.message}`)
-    const rows = data as ReservationRow[]
-    return rows.length > 0 ? rowToReservation(rows[0]) : null
+    try {
+        const [row] = await db.select().from(reservations).where(eq(reservations.mp_payment_id, mpPaymentId)).limit(1)
+        return row ? rowToReservation(row) : null
+    } catch (e) {
+        throw new Error(`Error obteniendo reserva por pago: ${errorMessage(e)}`)
+    }
 }
 
 // Crea una reserva. La constraint `no_overlap` (código Postgres 23P01) se
@@ -214,55 +229,43 @@ export async function getReservationByMpPaymentId(mpPaymentId: string): Promise<
 // backstop de idempotencia del webhook (dos notificaciones aprobadas del mismo
 // pago no pueden generar dos reservas), y el webhook lo trata como "ya procesado".
 export async function createReservation(input: ReservationInput): Promise<Reservation> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('reservations')
-        .insert(reservationToRow(input))
-        .select('*')
-        .single()
-
-    if (error) {
-        if (error.code === '23P01') throw new Error('DATE_CONFLICT')
-        if (error.code === '23505') throw new Error('DUPLICATE_MP_PAYMENT')
-        throw new Error(`Error creando reserva: ${error.message}`)
+    try {
+        const [row] = await db.insert(reservations).values(reservationToRow(input)).returning()
+        return rowToReservation(row)
+    } catch (e) {
+        const code = pgErrorCode(e)
+        if (code === '23P01') throw new Error('DATE_CONFLICT')
+        if (code === '23505') throw new Error('DUPLICATE_MP_PAYMENT')
+        throw new Error(`Error creando reserva: ${errorMessage(e)}`)
     }
-    return rowToReservation(data as ReservationRow)
 }
 
 export async function updateReservation(id: string, patch: Partial<ReservationInput>): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase
-        .from('reservations')
-        .update(reservationPatchToRow(patch))
-        .eq('id', id)
-
-    if (error) {
-        if (error.code === '23P01') throw new Error('DATE_CONFLICT')
-        throw new Error(`Error actualizando reserva: ${error.message}`)
+    const row = reservationPatchToRow(patch)
+    if (Object.keys(row).length === 0) return
+    try {
+        await db.update(reservations).set(row).where(eq(reservations.id, id))
+    } catch (e) {
+        if (pgErrorCode(e) === '23P01') throw new Error('DATE_CONFLICT')
+        throw new Error(`Error actualizando reserva: ${errorMessage(e)}`)
     }
 }
 
 export async function confirmReservation(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase
-        .from('reservations')
-        .update({ state: 'confirmed' })
-        .eq('id', id)
-
-    if (error) {
-        if (error.code === '23P01') throw new Error('DATE_CONFLICT')
-        throw new Error(`Error confirmando reserva: ${error.message}`)
+    try {
+        await db.update(reservations).set({ state: 'confirmed' }).where(eq(reservations.id, id))
+    } catch (e) {
+        if (pgErrorCode(e) === '23P01') throw new Error('DATE_CONFLICT')
+        throw new Error(`Error confirmando reserva: ${errorMessage(e)}`)
     }
 }
 
 export async function cancelReservation(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase
-        .from('reservations')
-        .update({ state: 'cancelled' })
-        .eq('id', id)
-
-    if (error) throw new Error(`Error cancelando reserva: ${error.message}`)
+    try {
+        await db.update(reservations).set({ state: 'cancelled' }).where(eq(reservations.id, id))
+    } catch (e) {
+        throw new Error(`Error cancelando reserva: ${errorMessage(e)}`)
+    }
 }
 
 // 'CAL-' + 8 caracteres alfanuméricos en mayúsculas (misma semántica que la ruta previa).

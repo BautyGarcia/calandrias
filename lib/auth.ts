@@ -1,16 +1,18 @@
+import 'server-only'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createServerSupabase } from '@/lib/supabase/server'
+import { auth } from '@/lib/better-auth'
+import { isAdminEmail } from '@/lib/auth-utils'
 
-export function isAdminEmail(email: string | undefined): boolean {
-    if (!email) return false
-    const allowed = (process.env.ADMIN_EMAILS || '')
-        .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-    return allowed.includes(email.trim().toLowerCase())
-}
+export { isAdminEmail }
 
+// Única puerta de entrada del backoffice: sesión válida de better-auth cuyo
+// email esté en la allowlist ADMIN_EMAILS. Toda server action y route handler
+// del panel debe llamarla primero (el middleware solo hace un chequeo
+// optimista por cookie).
 export async function requireAdmin(): Promise<{ email: string }> {
-    const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !isAdminEmail(user.email)) redirect('/admin/login')
-    return { email: user.email! }
+    const session = await auth.api.getSession({ headers: await headers() })
+    const email = session?.user.email
+    if (!session || !isAdminEmail(email)) redirect('/admin/login')
+    return { email: email! }
 }

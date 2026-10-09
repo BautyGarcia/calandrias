@@ -214,9 +214,6 @@ Todas las actions del panel llaman `requireAdmin()` primero, validan con zod y d
 
 | Name | File | Description |
 |------|------|-------------|
-| `createAdminClient()` | `lib/supabase/admin.ts` | Cliente `service_role` (`SUPABASE_SECRET_KEY`), bypasea RLS, sin persistencia de sesión. **server-only**. |
-| `createBrowserSupabase()` | `lib/supabase/client.ts` | Cliente browser (`@supabase/ssr`) con `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; usado en login/reset. |
-| `createServerSupabase()` | `lib/supabase/server.ts` | Cliente SSR con cookies de `next/headers` (set tolerante en Server Components); usado por `requireAdmin` y logout. |
 | `createServerClient` (inline) | `middleware.ts` | Cliente SSR por request para refrescar tokens y decidir el gate de `/admin/*`. |
 
 ---
@@ -343,15 +340,19 @@ Todas las actions del panel llaman `requireAdmin()` primero, validan con zod y d
 
 ---
 
-## dbm (better-auth / drizzle / S3) — rehearsal, aún sin uso en la app
+## dbm (better-auth / drizzle / S3) — en uso desde el cutover 2026-10-09
 
 | Name | File | Description |
 |------|------|-------------|
-| `auth` | `lib/better-auth.ts` | Instancia de better-auth (drizzle adapter, email+password, sesiones 7 días, rate limit en DB, ids uuid). |
+| `auth` | `lib/better-auth.ts` | Instancia de better-auth: email+password, alta restringida a `ADMIN_EMAILS` (hook `user.create.before`), reset por mail (Resend), sesiones 7 días, rate limit en DB, ids uuid, trustedOrigins = sitio + admin + localhost. |
 | `GET`/`POST` `/api/auth/*` | `app/api/auth/[...all]/route.ts` | Handler Next.js de better-auth (`toNextJsHandler(auth)`). |
 | `authClient` | `lib/auth-client.ts` | Cliente better-auth para el browser. |
 | `db`, `client` | `lib/db.ts` | Drizzle sobre postgres.js (`DATABASE_URL`, pool max 10, TLS verify-full). |
-| `lib/schema.ts` | `lib/schema.ts` | Schema drizzle de la app (vacío; tablas importadas todavía sin modelar). |
+| `cabins`, `cabinSyncConfig`, `reservations`, `faqs`, `reviews`, `galleryItems`, `siteContent`, `siteSettings` | `lib/schema.ts` | Tablas drizzle (claves snake_case) + enums `reservationState`/`reservationSource` y tipos jsonb `CabinFeatureJson`/`CabinAmenitiesJson`/`CabinOverrideJson`. |
+| `pgErrorCode`, `errorMessage` | `lib/db/errors.ts` | SQLSTATE y mensaje de un error de postgres.js/drizzle (23P01 → DATE_CONFLICT, 23505 → duplicado). |
+| `sendPasswordResetEmail` | `lib/auth-emails.ts` | Envía el mail de reset de contraseña del panel vía Resend. |
+| `isAdminEmail` | `lib/auth-utils.ts` | Allowlist `ADMIN_EMAILS` (también re-exportada desde `lib/auth.ts`). |
+| `putObject` | `lib/s3.ts` | Subida server-side al bucket (usada por `uploadImageToBucket`, clave `images/<dir>/<ts>-<nombre>`). |
 | `lib/auth-schema.ts` | `lib/auth-schema.ts` | Tablas `user`, `session`, `account`, `verification`, `rate_limit` (generado). |
 | helpers S3 | `lib/s3.ts` | Cliente S3 y URLs presignadas (`S3_*`); los objetos de Supabase quedaron bajo el prefijo `images/`. |
 | scripts | `package.json` | `pnpm auth:schema`, `pnpm db:push`, `pnpm db:generate`, `pnpm db:migrate`. |

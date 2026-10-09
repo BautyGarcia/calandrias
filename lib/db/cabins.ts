@@ -1,28 +1,11 @@
 import 'server-only'
-import { createAdminClient } from '@/lib/supabase/admin'
-import type {
-    Cabin,
-    CabinFeatureIcon,
-    Month,
-} from '@/types/cabin'
+import { asc, eq, max } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { cabins, cabinSyncConfig } from '@/lib/schema'
+import type { CabinAmenitiesJson, CabinFeatureJson, CabinOverrideJson } from '@/lib/schema'
+import { errorMessage, pgErrorCode } from '@/lib/db/errors'
+import type { Cabin, CabinFeatureIcon, Month } from '@/types/cabin'
 import type { CabinInput } from '@/types/db'
-
-// Shapes nativos de las columnas jsonb en Postgres (sin los `id` sintéticos
-// que el tipo de la app arrastra por compatibilidad histórica).
-interface CabinFeatureRow {
-    icon: string
-    label: string
-}
-interface CabinAmenitiesRow {
-    kitchen: boolean
-    air_conditioning: string
-    pool_shared: boolean
-}
-interface CabinOverrideRow {
-    mes: string
-    precio_override?: number
-    descuento_dia_semana_override?: number
-}
 
 // Fila tal como vive en Postgres (snake_case).
 export interface CabinRow {
@@ -37,20 +20,22 @@ export interface CabinRow {
     bathrooms: string
     image_url: string | null
     thumbnail_url: string | null
-    features: CabinFeatureRow[]
+    features: CabinFeatureJson[]
     highlights: string[]
-    amenities: CabinAmenitiesRow
+    amenities: CabinAmenitiesJson
     nearby_attractions: string[]
     rating_score: number
     rating_review_count: number
     precio_base_noche: number
     descuento_dia_semana_default: number
-    overrides_mensuales: CabinOverrideRow[]
+    overrides_mensuales: CabinOverrideJson[]
     is_published: boolean
     sort_order: number
     created_at: string
     updated_at: string
 }
+
+type CabinInsert = typeof cabins.$inferInsert
 
 // ---------------------------------------------------------------
 // Mapper puro (testeable sin DB)
@@ -97,8 +82,8 @@ export function rowToCabin(row: CabinRow): Cabin {
 }
 
 // Mapea sólo las claves presentes de un patch parcial (para UPDATE).
-function cabinPatchToRow(patch: Partial<CabinInput>): Record<string, unknown> {
-    const row: Record<string, unknown> = {}
+function cabinPatchToRow(patch: Partial<CabinInput>): Partial<CabinInsert> {
+    const row: Partial<CabinInsert> = {}
     if (patch.name !== undefined) row.name = patch.name
     if (patch.subtitle !== undefined) row.subtitle = patch.subtitle
     if (patch.description !== undefined) row.description = patch.description
@@ -123,143 +108,118 @@ function cabinPatchToRow(patch: Partial<CabinInput>): Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------
-// Acceso a datos
+// Acceso a datos (todo corre en el server; no hay RLS: el filtro
+// is_published de las lecturas públicas vive acá)
 // ---------------------------------------------------------------
 
-// Lectura pública: filtra is_published en código (RLS es defensa en profundidad).
 export async function getCabins(): Promise<Cabin[]> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabins')
-        .select('*')
-        .eq('is_published', true)
-        .order('sort_order', { ascending: true })
-
-    if (error) throw new Error(`Error obteniendo cabañas: ${error.message}`)
-    return (data as CabinRow[]).map(rowToCabin)
+    try {
+        const rows = await db.select().from(cabins).where(eq(cabins.is_published, true)).orderBy(asc(cabins.sort_order))
+        return rows.map(rowToCabin)
+    } catch (e) {
+        throw new Error(`Error obteniendo cabañas: ${errorMessage(e)}`)
+    }
 }
 
 export async function getCabinBySlug(slug: string): Promise<Cabin | null> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabins')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .maybeSingle()
-
-    if (error) throw new Error(`Error obteniendo cabaña: ${error.message}`)
-    return data ? rowToCabin(data as CabinRow) : null
+    try {
+        const [row] = await db.select().from(cabins).where(eq(cabins.slug, slug)).limit(1)
+        return row && row.is_published ? rowToCabin(row) : null
+    } catch (e) {
+        throw new Error(`Error obteniendo cabaña: ${errorMessage(e)}`)
+    }
 }
 
 // (admin) Lista TODAS las cabañas, incluidas las no publicadas (para el panel).
 export async function getAllCabinsAdmin(): Promise<Cabin[]> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabins')
-        .select('*')
-        .order('sort_order', { ascending: true })
-
-    if (error) throw new Error(`Error obteniendo cabañas (admin): ${error.message}`)
-    return (data as CabinRow[]).map(rowToCabin)
+    try {
+        const rows = await db.select().from(cabins).orderBy(asc(cabins.sort_order))
+        return rows.map(rowToCabin)
+    } catch (e) {
+        throw new Error(`Error obteniendo cabañas (admin): ${errorMessage(e)}`)
+    }
 }
 
 // (admin) Cabaña por slug sin filtrar is_published (para editar aunque esté oculta).
 export async function getCabinForAdmin(slug: string): Promise<Cabin | null> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabins')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle()
-
-    if (error) throw new Error(`Error obteniendo cabaña (admin): ${error.message}`)
-    return data ? rowToCabin(data as CabinRow) : null
+    try {
+        const [row] = await db.select().from(cabins).where(eq(cabins.slug, slug)).limit(1)
+        return row ? rowToCabin(row) : null
+    } catch (e) {
+        throw new Error(`Error obteniendo cabaña (admin): ${errorMessage(e)}`)
+    }
 }
 
 // (admin) URL iCal de Airbnb de una cabaña (o '' si no está configurada). id = uuid.
 export async function getAirbnbIcalUrl(cabinId: string): Promise<string> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabin_sync_config')
-        .select('airbnb_ical_url')
-        .eq('cabin_id', cabinId)
-        .maybeSingle()
-
-    if (error) throw new Error(`Error obteniendo URL iCal: ${error.message}`)
-    return data?.airbnb_ical_url ?? ''
+    try {
+        const [row] = await db
+            .select({ airbnb_ical_url: cabinSyncConfig.airbnb_ical_url })
+            .from(cabinSyncConfig)
+            .where(eq(cabinSyncConfig.cabin_id, cabinId))
+            .limit(1)
+        return row?.airbnb_ical_url ?? ''
+    } catch (e) {
+        throw new Error(`Error obteniendo URL iCal: ${errorMessage(e)}`)
+    }
 }
 
 // (admin) Actualiza campos editables de una cabaña por uuid.
 export async function updateCabin(id: string, patch: Partial<CabinInput>): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('cabins').update(cabinPatchToRow(patch)).eq('id', id)
-    if (error) throw new Error(`Error actualizando cabaña: ${error.message}`)
+    const row = cabinPatchToRow(patch)
+    if (Object.keys(row).length === 0) return
+    try {
+        await db.update(cabins).set(row).where(eq(cabins.id, id))
+    } catch (e) {
+        throw new Error(`Error actualizando cabaña: ${errorMessage(e)}`)
+    }
 }
 
 // (admin) Crea una cabaña borrador (oculta) con el resto de los campos en sus
 // defaults de DB; el contenido se completa después en el editor. Devuelve
 // 'duplicate' si el slug ya existe.
 export async function createCabin(slug: string, name: string): Promise<'created' | 'duplicate'> {
-    const supabase = createAdminClient()
-
-    const { data: maxRow, error: maxError } = await supabase
-        .from('cabins')
-        .select('sort_order')
-        .order('sort_order', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    if (maxError) throw new Error(`Error creando cabaña: ${maxError.message}`)
-
-    const { error } = await supabase.from('cabins').insert({
-        slug,
-        name,
-        is_published: false,
-        sort_order: (maxRow?.sort_order ?? 0) + 1,
-    })
-    if (error) {
-        if (error.code === '23505') return 'duplicate'
-        throw new Error(`Error creando cabaña: ${error.message}`)
+    try {
+        const [{ maxOrder }] = await db.select({ maxOrder: max(cabins.sort_order) }).from(cabins)
+        await db.insert(cabins).values({ slug, name, is_published: false, sort_order: (maxOrder ?? 0) + 1 })
+        return 'created'
+    } catch (e) {
+        if (pgErrorCode(e) === '23505') return 'duplicate'
+        throw new Error(`Error creando cabaña: ${errorMessage(e)}`)
     }
-    return 'created'
 }
 
 // (admin) Configuraciones de sync de Airbnb (URLs iCal privadas).
 export async function getAirbnbSyncConfigs(): Promise<
     { cabinId: string; cabinSlug: string; cabinName: string; icalUrl: string }[]
 > {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-        .from('cabin_sync_config')
-        .select('cabin_id, airbnb_ical_url, cabins(slug, name)')
+    try {
+        const rows = await db
+            .select({
+                cabin_id: cabinSyncConfig.cabin_id,
+                airbnb_ical_url: cabinSyncConfig.airbnb_ical_url,
+                slug: cabins.slug,
+                name: cabins.name,
+            })
+            .from(cabinSyncConfig)
+            .innerJoin(cabins, eq(cabins.id, cabinSyncConfig.cabin_id))
 
-    if (error) throw new Error(`Error obteniendo configs de sync: ${error.message}`)
-
-    type Row = {
-        cabin_id: string
-        airbnb_ical_url: string | null
-        cabins: { slug: string; name: string } | { slug: string; name: string }[] | null
+        return rows
+            .filter((r) => r.airbnb_ical_url.trim() !== '')
+            .map((r) => ({ cabinId: r.cabin_id, cabinSlug: r.slug, cabinName: r.name, icalUrl: r.airbnb_ical_url }))
+    } catch (e) {
+        throw new Error(`Error obteniendo configs de sync: ${errorMessage(e)}`)
     }
-
-    return (data as Row[])
-        .filter((r) => r.airbnb_ical_url && r.airbnb_ical_url.trim() !== '')
-        .map((r) => {
-            const cabin = Array.isArray(r.cabins) ? r.cabins[0] : r.cabins
-            return {
-                cabinId: r.cabin_id,
-                cabinSlug: cabin?.slug ?? '',
-                cabinName: cabin?.name ?? '',
-                icalUrl: r.airbnb_ical_url!,
-            }
-        })
 }
 
 // (admin) Setea/actualiza la URL iCal de Airbnb de una cabaña.
 export async function setAirbnbIcalUrl(cabinId: string, url: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase
-        .from('cabin_sync_config')
-        .upsert({ cabin_id: cabinId, airbnb_ical_url: url }, { onConflict: 'cabin_id' })
-
-    if (error) throw new Error(`Error guardando URL iCal: ${error.message}`)
+    try {
+        await db
+            .insert(cabinSyncConfig)
+            .values({ cabin_id: cabinId, airbnb_ical_url: url })
+            .onConflictDoUpdate({ target: cabinSyncConfig.cabin_id, set: { airbnb_ical_url: url } })
+    } catch (e) {
+        throw new Error(`Error guardando URL iCal: ${errorMessage(e)}`)
+    }
 }

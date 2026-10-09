@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { isAdminEmail } from '@/lib/auth'
+import { isAdminEmail } from '@/lib/auth-utils'
 
 describe('isAdminEmail', () => {
     const original = process.env.ADMIN_EMAILS

@@ -15,9 +15,10 @@ Al final hay un **checklist de deploy** para verificar entre el desarrollador y 
 
 - Es **una sola aplicación Next.js 15** (App Router). No hay dos proyectos separados: el sitio público y el backoffice viven en el mismo código y el mismo deploy.
 - El **ruteo por host** lo hace `middleware.ts`: los requests a `admin.calandrias.com.ar` se reescriben de forma transparente a `/admin/*`, mientras que `calandrias.com.ar` sirve el sitio público.
-- Los datos viven en **Supabase (Postgres)**. La RLS es **deny-by-default**: nadie lee ni escribe salvo lo explícitamente permitido.
-- Todas las **escrituras del backoffice pasan por el `service_role`** detrás de `requireAdmin()` (ver `lib/auth.ts`): una única puerta de entrada auditada, con validación `zod` en las server actions. La RLS queda como segunda línea de defensa.
-- El acceso de administrador se controla con la allowlist **`ADMIN_EMAILS`** más el usuario correspondiente en Supabase Auth.
+- Los datos viven en **Postgres en dbm** (plataforma propia; proyecto `calandrias`), accedidos con **drizzle** desde `lib/db/*`. No hay acceso anónimo a la DB ni RLS: todo pasa por código de servidor, y los filtros de publicación (`is_published`) viven en `lib/db/*`.
+- La autenticación del panel es **better-auth** (`lib/better-auth.ts`, tablas `user/session/account/verification/rate_limit`). Todas las **escrituras del backoffice pasan por `requireAdmin()`** (ver `lib/auth.ts`): una única puerta de entrada, con validación `zod` en las server actions.
+- Las **imágenes subidas** van al bucket S3 del proyecto (Garage, en dbm) bajo el prefijo `images/` y se sirven públicas desde `S3_PUBLIC_BASE_URL`.
+- El acceso de administrador se controla con la allowlist **`ADMIN_EMAILS`**: solo esos emails pueden crear su cuenta desde la pantalla de ingreso y entrar al panel.
 
 ### Requisitos y cómo correr
 
@@ -43,9 +44,12 @@ Los nombres (sin valores) están en `.env.example`. Esta es la lista completa qu
 
 | Variable | Ámbito | Para qué |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | público | URL del proyecto Supabase |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | público | Clave publicable de Supabase (cliente/SSR) |
-| `SUPABASE_SECRET_KEY` | servidor | Clave `service_role` para escrituras del backoffice |
+| `DATABASE_URL` | servidor | Postgres de dbm (pooler transaccional, puerto 6432) |
+| `DATABASE_URL_SESSION` | servidor | Pooler en modo sesión; solo para `drizzle-kit` (migraciones) |
+| `BETTER_AUTH_SECRET` | servidor | Secreto de firmado de better-auth |
+| `BETTER_AUTH_URL` | servidor | Solo producción: `https://admin.calandrias.com.ar` (en preview/local va vacío) |
+| `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | servidor | Bucket S3 (Garage) del proyecto en dbm |
+| `S3_PUBLIC_BASE_URL` | servidor (build) | URL pública del bucket (`https://calandrias.web.bautygarcia.com`); también habilita el host en `next.config.ts` |
 | `ADMIN_EMAILS` | servidor | Emails (separados por coma) con acceso al backoffice |
 | `MP_ACCESS_TOKEN` | servidor | Token de MercadoPago (crear preferencias) |
 | `MP_WEBHOOK_SECRET` | servidor | Secreto para validar el webhook de MercadoPago |
@@ -59,43 +63,27 @@ Los nombres (sin valores) están en `.env.example`. Esta es la lista completa qu
 
 > Las variables `NEXT_PUBLIC_*` se exponen al navegador; el resto es solo de servidor.
 
-### Migraciones de base de datos
+### Base de datos (dbm)
 
-Las migraciones viven en `supabase/migrations/` (`0001_initial_schema.sql`, `0002_rls.sql`, ...).
+El proyecto vive en la plataforma **dbm** con el slug **`calandrias`** (`dbm env calandrias` imprime las variables; `dbm psql calandrias` abre una consola; `dbm backup calandrias` hace un backup off-site a demanda, además del nocturno).
 
-El proyecto Supabase tiene el ref **`vmtmgsnlmhihbycpqolo`**. Para aplicarlas hay dos caminos:
-
-**A) Supabase CLI (recomendado):**
-
-```bash
-supabase link --project-ref vmtmgsnlmhihbycpqolo
-supabase db push
-```
-
-**B) Management API** (la vía usada durante la construcción del proyecto):
-
-```
-POST /v1/projects/vmtmgsnlmhihbycpqolo/database/query
-```
-
-enviando el SQL de la migración en el cuerpo. Útil cuando no hay CLI a mano.
+- El schema de la app está en `lib/schema.ts` (drizzle) y las tablas de better-auth en `lib/auth-schema.ts` (generado con `pnpm auth:schema`).
+- Lo que drizzle no modela vive en SQL y ya está aplicado en dbm: la exclusion constraint `no_overlap` (requiere `btree_gist`), los triggers `set_updated_at` y la RPC `admin_reorder`. El SQL original quedó como historial en `supabase/migrations/`.
+- Para cambios de schema: editar `lib/schema.ts` y correr `pnpm db:push` (usa `DATABASE_URL_SESSION`). Revisar lo que propone antes de confirmar: drizzle-kit no conoce la constraint `no_overlap` ni los triggers.
+- Migración desde Supabase (2026-10-09): datos y bucket `images` copiados con `dbm import`; el checklist cerrado está en `MIGRATION.md`.
 
 ### Cómo dar de alta un administrador
 
-Hacen falta **los dos pasos, en este orden** (si falta uno, la persona no entra):
+1. Agregar su email a la variable **`ADMIN_EMAILS`** (lista separada por comas) en Vercel y **redesplegar**.
+2. La persona entra a **https://admin.calandrias.com.ar/login**, toca **"¿Primera vez? Creá tu cuenta"**, pone su email y una contraseña (mínimo 8 caracteres) y ya queda dentro del panel. Si el email no está en la allowlist, el alta se rechaza.
 
-1. Agregar su email a la variable **`ADMIN_EMAILS`** (lista separada por comas) en Vercel y **redesplegar**. Hacerlo primero, así la persona puede entrar apenas crea su contraseña.
-2. Invitarlo desde **Supabase Dashboard → Authentication → Users → Invite user**. Le llega un mail brandeado con un botón "Crear mi contraseña" que lo lleva a `admin.calandrias.com.ar/reset`; ahí define su contraseña y ya puede ingresar al panel.
-
-El enlace de invitación vence a las 24 horas. Si venció, se puede reenviar la invitación desde el mismo lugar del dashboard, o la persona puede usar "¿Olvidaste tu contraseña?" en la pantalla de ingreso (el usuario ya existe en Auth desde la primera invitación).
-
-**Dónde vive esta configuración:** los templates de los mails de invitación y de recuperación están versionados en `docs/supabase/email-templates/` y aplicados a Supabase vía Management API (`PATCH /v1/projects/vmtmgsnlmhihbycpqolo/config/auth`, campos `mailer_templates_invite_content` y `mailer_templates_recovery_content`). En la misma config viven el **Site URL** (`https://admin.calandrias.com.ar`), las **Redirect URLs** permitidas (`…/reset` de prod y `http://localhost:3000/admin/reset` para desarrollo) y el **SMTP custom**: los mails de Auth salen por **Resend** (`smtp.resend.com`, remitente `noreply@calandrias.com.ar`, misma API key que los mails de reservas) — necesario porque el tier free de Supabase no permite templates custom con su mailer default. Si se editan los HTML, hay que volver a aplicar el PATCH.
+Si se olvida la contraseña: **"¿Olvidaste tu contraseña?"** en la pantalla de ingreso le manda un mail (por Resend, remitente `noreply@calandrias.com.ar`, template en `lib/auth-emails.ts`) con un enlace que vence en 1 hora y lo lleva a `admin.calandrias.com.ar/reset`.
 
 ---
 
 ## Parte 2 — Manual del backoffice (para el cliente)
 
-El panel de administración está en **https://admin.calandrias.com.ar**. Se ingresa con el email y la contraseña que te dimos. Si te olvidás la contraseña, usá el enlace de recuperación en la pantalla de ingreso y te llega un mail para elegir una nueva.
+El panel de administración está en **https://admin.calandrias.com.ar**. La primera vez tocá **"¿Primera vez? Creá tu cuenta"**, poné tu email (el que te habilitamos) y elegí una contraseña. Después entrás con ese email y esa contraseña. Si te olvidás la contraseña, usá "¿Olvidaste tu contraseña?" en la pantalla de ingreso y te llega un mail para elegir una nueva.
 
 El panel tiene cuatro secciones: **Reservas**, **Cabañas**, **Contenido** y **Configuración**.
 
@@ -137,18 +125,14 @@ Los textos e imágenes del sitio público:
 
 Para verificar entre el desarrollador y el cliente antes/después de publicar.
 
-> **Nota sobre secretos:** por decisión del usuario, **no se rotan** los secretos de MercadoPago ni el `CRON_SECRET`; se reutilizan los existentes. La key de **Resend sí fue rotada** (2026-07-16, key nueva de "solo envío"): usar la del `.env` actual, que también está cargada como SMTP de Supabase Auth.
+> **Nota sobre secretos:** por decisión del usuario, **no se rotan** los secretos de MercadoPago ni el `CRON_SECRET`; se reutilizan los existentes. La key de **Resend** es la rotada el 2026-07-16 (solo envío).
 
-- [ ] **Variables de entorno en Vercel** cargadas exactamente con la lista de la Parte 1:
-      `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
-      `ADMIN_EMAILS`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
-      `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ADMIN_URL`,
-      `NEXT_PUBLIC_GA_TRACKING_ID`, `NEXT_PUBLIC_GTM_ID`.
-- [ ] **Sin variables muertas:** que NO estén `STRAPI_*`, `NEXT_PUBLIC_CRON_SECRET`, `NEXT_PUBLIC_STRAPI_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` ni `ADMIN_SECRET_KEY`.
+- [ ] **Variables de entorno en Vercel** cargadas exactamente con la lista de la Parte 1 (las de dbm salen de `dbm env calandrias`; `BETTER_AUTH_URL` solo en producción).
+- [ ] **Sin variables muertas:** que NO estén `STRAPI_*`, `NEXT_PUBLIC_CRON_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_SECRET_KEY` ni ninguna `*SUPABASE*`.
 - [ ] **Dominios activos** (DNS ya configurado): sitio en `calandrias.com.ar` y panel en `admin.calandrias.com.ar`, ambos respondiendo.
 - [ ] **Webhook de MercadoPago** apuntando a `https://calandrias.com.ar/api/payments/webhook`.
 - [ ] **Cron de Vercel** activo: `vercel.json` intacto (sync de Airbnb, diario a las 06:00 UTC) con `CRON_SECRET` cargado.
-- [ ] **Supabase → Authentication → URL Configuration → Site URL** = `https://admin.calandrias.com.ar` (para que los mails de recuperación de contraseña apunten al panel).
+- [ ] **Región de Vercel** `iad1` en `vercel.json` (la más cercana al VPS de dbm).
 - [ ] **Prueba real (smoke test):** hacer una reserva de prueba en **modo test** de MercadoPago →
       el webhook crea la reserva confirmada →
       llega el email de confirmación →

@@ -1,5 +1,8 @@
 import 'server-only'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { asc, eq, sql } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { faqs, galleryItems, reviews, siteContent, siteSettings } from '@/lib/schema'
+import { errorMessage } from '@/lib/db/errors'
 import type {
     SiteSettings,
     Faq,
@@ -11,51 +14,13 @@ import type {
 } from '@/types/db'
 
 // ---------------------------------------------------------------
-// Row shapes (snake_case) + mappers
+// Mappers (fila snake_case → tipo de la app)
 // ---------------------------------------------------------------
 
-interface SiteSettingsRow {
-    id: boolean
-    bookings_enabled: boolean
-    whatsapp: string
-    phone: string
-    email: string
-    address: string
-    checkin_time: string
-    checkout_time: string
-    updated_at: string
-}
-
-interface FaqRow {
-    id: string
-    question: string
-    answer: string
-    sort_order: number
-    is_published: boolean
-    updated_at: string
-}
-
-interface ReviewRow {
-    id: string
-    name: string
-    location: string
-    text: string
-    rating: number
-    sort_order: number
-    is_published: boolean
-    updated_at: string
-}
-
-interface GalleryItemRow {
-    id: string
-    title: string
-    description: string
-    image_url: string
-    span: string
-    sort_order: number
-    is_published: boolean
-    updated_at: string
-}
+type SiteSettingsRow = typeof siteSettings.$inferSelect
+type FaqRow = typeof faqs.$inferSelect
+type ReviewRow = typeof reviews.$inferSelect
+type GalleryItemRow = typeof galleryItems.$inferSelect
 
 function rowToSiteSettings(row: SiteSettingsRow): SiteSettings {
     return {
@@ -108,14 +73,17 @@ function rowToGalleryItem(row: GalleryItemRow): GalleryItem {
 // ---------------------------------------------------------------
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase.from('site_settings').select('*').eq('id', true).single()
-    if (error) throw new Error(`Error obteniendo configuración: ${error.message}`)
-    return rowToSiteSettings(data as SiteSettingsRow)
+    try {
+        const [row] = await db.select().from(siteSettings).where(eq(siteSettings.id, true)).limit(1)
+        if (!row) throw new Error('fila de configuración ausente')
+        return rowToSiteSettings(row)
+    } catch (e) {
+        throw new Error(`Error obteniendo configuración: ${errorMessage(e)}`)
+    }
 }
 
 export async function updateSiteSettings(patch: Partial<SiteSettings>): Promise<void> {
-    const row: Record<string, unknown> = {}
+    const row: Partial<typeof siteSettings.$inferInsert> = {}
     if (patch.bookingsEnabled !== undefined) row.bookings_enabled = patch.bookingsEnabled
     if (patch.whatsapp !== undefined) row.whatsapp = patch.whatsapp
     if (patch.phone !== undefined) row.phone = patch.phone
@@ -123,10 +91,13 @@ export async function updateSiteSettings(patch: Partial<SiteSettings>): Promise<
     if (patch.address !== undefined) row.address = patch.address
     if (patch.checkinTime !== undefined) row.checkin_time = patch.checkinTime
     if (patch.checkoutTime !== undefined) row.checkout_time = patch.checkoutTime
+    if (Object.keys(row).length === 0) return
 
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('site_settings').update(row).eq('id', true)
-    if (error) throw new Error(`Error actualizando configuración: ${error.message}`)
+    try {
+        await db.update(siteSettings).set(row).where(eq(siteSettings.id, true))
+    } catch (e) {
+        throw new Error(`Error actualizando configuración: ${errorMessage(e)}`)
+    }
 }
 
 // ---------------------------------------------------------------
@@ -134,18 +105,23 @@ export async function updateSiteSettings(patch: Partial<SiteSettings>): Promise<
 // ---------------------------------------------------------------
 
 export async function getSiteContent<T>(key: string): Promise<T | null> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase.from('site_content').select('value').eq('key', key).maybeSingle()
-    if (error) throw new Error(`Error obteniendo contenido '${key}': ${error.message}`)
-    return data ? (data.value as T) : null
+    try {
+        const [row] = await db.select({ value: siteContent.value }).from(siteContent).where(eq(siteContent.key, key)).limit(1)
+        return row ? (row.value as T) : null
+    } catch (e) {
+        throw new Error(`Error obteniendo contenido '${key}': ${errorMessage(e)}`)
+    }
 }
 
 export async function setSiteContent<T>(key: string, value: T): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase
-        .from('site_content')
-        .upsert({ key, value }, { onConflict: 'key' })
-    if (error) throw new Error(`Error guardando contenido '${key}': ${error.message}`)
+    try {
+        await db
+            .insert(siteContent)
+            .values({ key, value })
+            .onConflictDoUpdate({ target: siteContent.key, set: { value } })
+    } catch (e) {
+        throw new Error(`Error guardando contenido '${key}': ${errorMessage(e)}`)
+    }
 }
 
 // ---------------------------------------------------------------
@@ -153,33 +129,43 @@ export async function setSiteContent<T>(key: string, value: T): Promise<void> {
 // ---------------------------------------------------------------
 
 export async function getFaqs(all = false): Promise<Faq[]> {
-    const supabase = createAdminClient()
-    let query = supabase.from('faqs').select('*').order('sort_order', { ascending: true })
-    if (!all) query = query.eq('is_published', true)
-    const { data, error } = await query
-    if (error) throw new Error(`Error obteniendo FAQs: ${error.message}`)
-    return (data as FaqRow[]).map(rowToFaq)
+    try {
+        const rows = await db
+            .select()
+            .from(faqs)
+            .where(all ? undefined : eq(faqs.is_published, true))
+            .orderBy(asc(faqs.sort_order))
+        return rows.map(rowToFaq)
+    } catch (e) {
+        throw new Error(`Error obteniendo FAQs: ${errorMessage(e)}`)
+    }
 }
 
 export async function upsertFaq(faq: FaqInput): Promise<Faq> {
-    const row: Record<string, unknown> = {
+    const set = {
         question: faq.question,
         answer: faq.answer,
         sort_order: faq.sortOrder,
         is_published: faq.isPublished,
     }
-    if (faq.id) row.id = faq.id
-
-    const supabase = createAdminClient()
-    const { data, error } = await supabase.from('faqs').upsert(row).select('*').single()
-    if (error) throw new Error(`Error guardando FAQ: ${error.message}`)
-    return rowToFaq(data as FaqRow)
+    try {
+        const [row] = await db
+            .insert(faqs)
+            .values({ id: faq.id || undefined, ...set })
+            .onConflictDoUpdate({ target: faqs.id, set })
+            .returning()
+        return rowToFaq(row)
+    } catch (e) {
+        throw new Error(`Error guardando FAQ: ${errorMessage(e)}`)
+    }
 }
 
 export async function deleteFaq(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('faqs').delete().eq('id', id)
-    if (error) throw new Error(`Error eliminando FAQ: ${error.message}`)
+    try {
+        await db.delete(faqs).where(eq(faqs.id, id))
+    } catch (e) {
+        throw new Error(`Error eliminando FAQ: ${errorMessage(e)}`)
+    }
 }
 
 // ---------------------------------------------------------------
@@ -187,16 +173,20 @@ export async function deleteFaq(id: string): Promise<void> {
 // ---------------------------------------------------------------
 
 export async function getReviews(all = false): Promise<Review[]> {
-    const supabase = createAdminClient()
-    let query = supabase.from('reviews').select('*').order('sort_order', { ascending: true })
-    if (!all) query = query.eq('is_published', true)
-    const { data, error } = await query
-    if (error) throw new Error(`Error obteniendo reseñas: ${error.message}`)
-    return (data as ReviewRow[]).map(rowToReview)
+    try {
+        const rows = await db
+            .select()
+            .from(reviews)
+            .where(all ? undefined : eq(reviews.is_published, true))
+            .orderBy(asc(reviews.sort_order))
+        return rows.map(rowToReview)
+    } catch (e) {
+        throw new Error(`Error obteniendo reseñas: ${errorMessage(e)}`)
+    }
 }
 
 export async function upsertReview(review: ReviewInput): Promise<Review> {
-    const row: Record<string, unknown> = {
+    const set = {
         name: review.name,
         location: review.location,
         text: review.text,
@@ -204,18 +194,24 @@ export async function upsertReview(review: ReviewInput): Promise<Review> {
         sort_order: review.sortOrder,
         is_published: review.isPublished,
     }
-    if (review.id) row.id = review.id
-
-    const supabase = createAdminClient()
-    const { data, error } = await supabase.from('reviews').upsert(row).select('*').single()
-    if (error) throw new Error(`Error guardando reseña: ${error.message}`)
-    return rowToReview(data as ReviewRow)
+    try {
+        const [row] = await db
+            .insert(reviews)
+            .values({ id: review.id || undefined, ...set })
+            .onConflictDoUpdate({ target: reviews.id, set })
+            .returning()
+        return rowToReview(row)
+    } catch (e) {
+        throw new Error(`Error guardando reseña: ${errorMessage(e)}`)
+    }
 }
 
 export async function deleteReview(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('reviews').delete().eq('id', id)
-    if (error) throw new Error(`Error eliminando reseña: ${error.message}`)
+    try {
+        await db.delete(reviews).where(eq(reviews.id, id))
+    } catch (e) {
+        throw new Error(`Error eliminando reseña: ${errorMessage(e)}`)
+    }
 }
 
 // ---------------------------------------------------------------
@@ -223,16 +219,20 @@ export async function deleteReview(id: string): Promise<void> {
 // ---------------------------------------------------------------
 
 export async function getGalleryItems(all = false): Promise<GalleryItem[]> {
-    const supabase = createAdminClient()
-    let query = supabase.from('gallery_items').select('*').order('sort_order', { ascending: true })
-    if (!all) query = query.eq('is_published', true)
-    const { data, error } = await query
-    if (error) throw new Error(`Error obteniendo galería: ${error.message}`)
-    return (data as GalleryItemRow[]).map(rowToGalleryItem)
+    try {
+        const rows = await db
+            .select()
+            .from(galleryItems)
+            .where(all ? undefined : eq(galleryItems.is_published, true))
+            .orderBy(asc(galleryItems.sort_order))
+        return rows.map(rowToGalleryItem)
+    } catch (e) {
+        throw new Error(`Error obteniendo galería: ${errorMessage(e)}`)
+    }
 }
 
 export async function upsertGalleryItem(item: GalleryItemInput): Promise<GalleryItem> {
-    const row: Record<string, unknown> = {
+    const set = {
         title: item.title,
         description: item.description,
         image_url: item.imageUrl,
@@ -240,18 +240,24 @@ export async function upsertGalleryItem(item: GalleryItemInput): Promise<Gallery
         sort_order: item.sortOrder,
         is_published: item.isPublished,
     }
-    if (item.id) row.id = item.id
-
-    const supabase = createAdminClient()
-    const { data, error } = await supabase.from('gallery_items').upsert(row).select('*').single()
-    if (error) throw new Error(`Error guardando ítem de galería: ${error.message}`)
-    return rowToGalleryItem(data as GalleryItemRow)
+    try {
+        const [row] = await db
+            .insert(galleryItems)
+            .values({ id: item.id || undefined, ...set })
+            .onConflictDoUpdate({ target: galleryItems.id, set })
+            .returning()
+        return rowToGalleryItem(row)
+    } catch (e) {
+        throw new Error(`Error guardando ítem de galería: ${errorMessage(e)}`)
+    }
 }
 
 export async function deleteGalleryItem(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('gallery_items').delete().eq('id', id)
-    if (error) throw new Error(`Error eliminando ítem de galería: ${error.message}`)
+    try {
+        await db.delete(galleryItems).where(eq(galleryItems.id, id))
+    } catch (e) {
+        throw new Error(`Error eliminando ítem de galería: ${errorMessage(e)}`)
+    }
 }
 
 // ---------------------------------------------------------------
@@ -261,9 +267,11 @@ export async function deleteGalleryItem(id: string): Promise<void> {
 export type ReorderableTable = 'faqs' | 'reviews' | 'gallery_items'
 
 // Renumera sort_order = posición (1-based) según el orden de `ids`, en un
-// único UPDATE atómico (función admin_reorder, migración 0004).
+// único UPDATE atómico (función SQL admin_reorder, migración 0004).
 export async function reorderContent(table: ReorderableTable, ids: string[]): Promise<void> {
-    const supabase = createAdminClient()
-    const { error } = await supabase.rpc('admin_reorder', { p_table: table, p_ids: ids })
-    if (error) throw new Error(`Error reordenando ${table}: ${error.message}`)
+    try {
+        await db.execute(sql`select admin_reorder(${table}, ${ids}::uuid[])`)
+    } catch (e) {
+        throw new Error(`Error reordenando ${table}: ${errorMessage(e)}`)
+    }
 }

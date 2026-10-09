@@ -27,6 +27,11 @@ export function getPresignedDownloadUrl(key: string, expiresIn = 900) {
   return getSignedUrl(s3, new GetObjectCommand({ Bucket, Key: key }), { expiresIn });
 }
 
+/** Server-side upload (small files handled by a server action). */
+export function putObject(key: string, body: Uint8Array, contentType: string) {
+  return s3.send(new PutObjectCommand({ Bucket, Key: key, Body: body, ContentType: contentType }));
+}
+
 export function deleteObject(key: string) {
   return s3.send(new DeleteObjectCommand({ Bucket, Key: key }));
 }

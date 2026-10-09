@@ -1,15 +1,21 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createBrowserSupabase } from '@/lib/supabase/client'
-import { parseAuthHashTokens, sanitizeRedirect } from '@/lib/auth-utils'
+import { authClient } from '@/lib/auth-client'
+import { sanitizeRedirect } from '@/lib/auth-utils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Lock, Mail, Loader2 } from "lucide-react"
+
+// Path de la pantalla de reset según el host: en admin.<dominio> la URL visible
+// es /reset (el middleware la reescribe a /admin/reset).
+function resetPath(): string {
+    return window.location.pathname.startsWith('/admin') ? '/admin/reset' : '/reset'
+}
 
 function AdminLoginForm() {
     const [email, setEmail] = useState('')
@@ -18,40 +24,32 @@ function AdminLoginForm() {
     const [info, setInfo] = useState('')
     const [loading, setLoading] = useState(false)
     const [resetting, setResetting] = useState(false)
+    // 'login' | 'signup': el alta reemplaza la invitación por mail de Supabase.
+    // Solo los emails de ADMIN_EMAILS pueden crear cuenta (lo valida el server).
+    const [mode, setMode] = useState<'login' | 'signup'>('login')
     const searchParams = useSearchParams()
 
-    // Red de seguridad: si un link de email de Supabase (recovery/invite)
-    // aterriza acá con los tokens en el hash — pasa cuando el mail se dispara
-    // desde el dashboard sin redirect_to y cae al Site URL raíz, cuyo redirect
-    // a login preserva el fragment — lo reenviamos a la pantalla de reset con
-    // el hash intacto para que pueda definir su contraseña.
-    useEffect(() => {
-        const hash = window.location.hash
-        if (!parseAuthHashTokens(hash)) return
-        const resetPath = window.location.pathname.startsWith('/admin') ? '/admin/reset' : '/reset'
-        window.location.replace(resetPath + hash)
-    }, [])
-
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError('')
         setInfo('')
 
         try {
-            const supabase = createBrowserSupabase()
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password,
-            })
+            const credentials = { email: email.trim(), password }
+            const result = mode === 'signup'
+                ? await authClient.signUp.email({ ...credentials, name: credentials.email })
+                : await authClient.signIn.email(credentials)
 
-            if (signInError) {
-                // Mensaje genérico: nunca revelar si el email existe.
-                setError('Credenciales incorrectas')
+            if (result.error) {
+                // Mensajes genéricos: nunca revelar si el email existe.
+                setError(mode === 'signup'
+                    ? 'No se pudo crear la cuenta. Verificá que tu email esté habilitado como administrador y que la contraseña tenga al menos 8 caracteres.'
+                    : 'Credenciales incorrectas')
                 return
             }
 
-            // Las cookies ya fueron seteadas por el cliente de @supabase/ssr.
+            // Las cookies ya fueron seteadas por la respuesta de /api/auth.
             // Navegación completa para que el middleware vea las cookies frescas.
             const redirectTo = sanitizeRedirect(searchParams.get('redirect'), '/admin/reservas')
             window.location.assign(redirectTo)
@@ -73,9 +71,9 @@ function AdminLoginForm() {
 
         setResetting(true)
         try {
-            const supabase = createBrowserSupabase()
-            await supabase.auth.resetPasswordForEmail(email.trim(), {
-                redirectTo: `${process.env.NEXT_PUBLIC_ADMIN_URL}/reset`,
+            await authClient.requestPasswordReset({
+                email: email.trim(),
+                redirectTo: `${window.location.origin}${resetPath()}`,
             })
             // Mensaje genérico: no revelar si el email está registrado.
             setInfo('Si el email está registrado, te enviamos un enlace para restablecer la contraseña.')
@@ -102,12 +100,12 @@ function AdminLoginForm() {
                     <CardHeader className="border-b border-[var(--beige-arena)]">
                         <CardTitle className="text-[var(--brown-earth)] flex items-center gap-2">
                             <Lock className="h-5 w-5" />
-                            Ingresar al panel
+                            {mode === 'signup' ? 'Crear cuenta de administrador' : 'Ingresar al panel'}
                         </CardTitle>
                     </CardHeader>
 
                     <CardContent className="p-6">
-                        <form onSubmit={handleLogin} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="text-[var(--brown-earth)]">
                                     Email
@@ -139,11 +137,12 @@ function AdminLoginForm() {
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Ingresá tu contraseña"
+                                        placeholder={mode === 'signup' ? 'Mínimo 8 caracteres' : 'Ingresá tu contraseña'}
                                         className="pl-10 border-[var(--beige-arena)] focus:border-[var(--brown-earth)]"
                                         required
+                                        minLength={mode === 'signup' ? 8 : undefined}
                                         disabled={loading}
-                                        autoComplete="current-password"
+                                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                                     />
                                 </div>
                             </div>
@@ -172,20 +171,31 @@ function AdminLoginForm() {
                                 {loading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Ingresando...
+                                        {mode === 'signup' ? 'Creando cuenta...' : 'Ingresando...'}
                                     </>
                                 ) : (
-                                    'Ingresar al panel'
+                                    mode === 'signup' ? 'Crear cuenta' : 'Ingresar al panel'
                                 )}
                             </Button>
 
+                            {mode === 'login' && (
+                                <button
+                                    type="button"
+                                    onClick={handleForgotPassword}
+                                    disabled={resetting || loading}
+                                    className="w-full text-sm text-[var(--slate-gray)] hover:text-[var(--brown-earth)] underline underline-offset-4 disabled:opacity-60"
+                                >
+                                    {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+                                </button>
+                            )}
+
                             <button
                                 type="button"
-                                onClick={handleForgotPassword}
-                                disabled={resetting || loading}
+                                onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo('') }}
+                                disabled={loading}
                                 className="w-full text-sm text-[var(--slate-gray)] hover:text-[var(--brown-earth)] underline underline-offset-4 disabled:opacity-60"
                             >
-                                {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+                                {mode === 'login' ? '¿Primera vez? Creá tu cuenta' : 'Ya tengo cuenta: ingresar'}
                             </button>
                         </form>
                     </CardContent>

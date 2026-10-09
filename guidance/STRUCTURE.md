@@ -235,15 +235,17 @@ calandrias/
 - **Escrituras**: toda escritura pasa por Server Actions con `requireAdmin()` + cliente service_role; RLS es deny-by-default (solo lectura pública de contenido publicado).
 - **Admin host**: `admin.calandrias.com.ar/x` se reescribe a `/admin/x` en `middleware.ts`; `/api/*` no se reescribe.
 
-## Capa dbm (migración Supabase → dbm, rehearsal 2026-10-09)
+## Capa dbm (migración Supabase → dbm, cutover 2026-10-09)
 
-Archivos agregados por el skill `/dbmanager`; conviven con el código Supabase hasta el cutover.
+La app corre 100% sobre dbm: `lib/supabase/` fue eliminado y los paquetes `@supabase/*` desinstalados.
 
 - `lib/better-auth.ts` — config de better-auth (drizzle adapter, email+password, rate limit en DB). Va en este nombre y no en `lib/auth.ts` porque ahí vive `requireAdmin()` del backoffice actual.
 - `lib/auth-schema.ts` — tablas de better-auth generadas (`pnpm auth:schema`); no editar a mano.
 - `lib/auth-client.ts` — cliente better-auth para componentes client.
 - `lib/db.ts` — cliente drizzle + postgres.js contra `DATABASE_URL` (pooler transaccional, TLS verify-full).
-- `lib/schema.ts` — schema drizzle de la app (vacío; falta modelar las tablas importadas).
+- `lib/schema.ts` — schema drizzle de las 8 tablas de la app (claves snake_case; enums reservation_state/source).
+- `lib/db/errors.ts` — `pgErrorCode()` / `errorMessage()` para traducir SQLSTATE de postgres.js (envuelto por DrizzleQueryError).
+- `lib/auth-emails.ts` — mail brandeado de reset de contraseña (Resend, import diferido).
 - `lib/s3.ts` — helpers S3 presignados contra el bucket `calandrias` de dbm (Garage).
 - `app/api/auth/[...all]/route.ts` — handler GET/POST de better-auth.
 - `drizzle.config.ts` — drizzle-kit sobre `DATABASE_URL_SESSION`; carga `.env.local`.

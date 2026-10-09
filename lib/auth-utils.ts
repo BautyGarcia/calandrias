@@ -28,30 +28,13 @@ export function sanitizeRedirect(raw: string | null, fallback: string): string {
 }
 
 /**
- * Extrae el parámetro `type` del hash de un callback de Supabase Auth
- * (`#access_token=…&type=invite`). Se usa para adaptar la copy de la página
- * de reset según el flujo (invite vs recovery). Debe leerse ANTES de crear
- * el cliente browser de Supabase, que consume y limpia el hash
- * (detectSessionInUrl). Devuelve null si no hay hash válido o no trae type.
+ * Allowlist de administradores: `ADMIN_EMAILS` (separados por coma, sin
+ * distinguir mayúsculas). Es la única puerta al panel: better-auth rechaza
+ * el alta de cuentas fuera de la lista y `requireAdmin()` exige pertenecer.
  */
-export function parseAuthHashType(hash: string): string | null {
-    if (!hash.startsWith('#')) return null
-    return new URLSearchParams(hash.slice(1)).get('type') || null
-}
-
-/**
- * Extrae los tokens de sesión del hash de un callback de Supabase Auth.
- * Los links de email de Supabase (invite/recovery) usan el flujo implicit
- * (tokens en el hash), pero el cliente browser de @supabase/ssr se crea con
- * flowType 'pkce' y auth-js RECHAZA hashes implicit en modo pkce ("Not a
- * valid PKCE flow url"), por lo que detectSessionInUrl nunca crea la sesión.
- * La página debe parsear los tokens con esto y llamar setSession() explícito.
- */
-export function parseAuthHashTokens(hash: string): { access_token: string; refresh_token: string } | null {
-    if (!hash.startsWith('#')) return null
-    const params = new URLSearchParams(hash.slice(1))
-    const access_token = params.get('access_token')
-    const refresh_token = params.get('refresh_token')
-    if (!access_token || !refresh_token) return null
-    return { access_token, refresh_token }
+export function isAdminEmail(email: string | undefined): boolean {
+    if (!email) return false
+    const allowed = (process.env.ADMIN_EMAILS || '')
+        .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+    return allowed.includes(email.trim().toLowerCase())
 }
